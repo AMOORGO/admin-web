@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *, .dark, .dark *));
+
+:root {
+  /* AMOORGO Brand Tokens - Love Plum Palette */
+  --plum-50: #FAF0F7;
+  --plum-100: #F5E2F0;
+  --plum-200: #E9BFDF;
+  --plum-300: #DB99CC;
+  --plum-400: #C76DB3;
+  --plum-500: #A74490;
+  --plum-600: #7A2B66;
+  --plum-700: #521A44;
+  --plum-800: #3A102F;
+  --plum-900: #260A1F;
+  --plum-950: #190514;
+
+  /* Heart Coral Palette */
+  --coral-50: #FFF3F1;
+  --coral-100: #FFE4DF;
+  --coral-200: #FFC4BC;
+  --coral-300: #FFA093;
+  --coral-400: #FF7361;
+  --coral-500: #F94B35;
+  --coral-600: #D93320;
+  --coral-700: #B02414;
+  --coral-800: #871B0F;
+  --coral-900: #61130A;
+
+  /* Safety Teal Palette */
+  --teal-50: #EFFCF9;
+  --teal-100: #DCFAF2;
+  --teal-200: #B4F2E1;
+  --teal-300: #82E5CB;
+  --teal-400: #4FD2B2;
+  --teal-500: #26B896;
+  --teal-600: #189578;
+  --teal-700: #14755F;
+  --teal-800: #125747;
+  --teal-900: #0E3D32;
+
+  /* Light Mode Semantic Surfaces */
+  --bg-app: #FDFBFC;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F9F5F8;
+  --bg-elevated: #FFFFFF;
+  --border-subtle: #F0E3ED;
+  --border-strong: #E2CFDF;
+  --text-main: #1C121A;
+  --text-muted: #6B5B69;
+  --text-dim: #998797;
+  --accent-plum: #3A102F;
+  --accent-plum-hover: #521A44;
+  --accent-coral: #F94B35;
+  --accent-teal: #189578;
+  --card-shadow: 0 4px 20px -2px rgba(58, 16, 47, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  --modal-overlay: rgba(25, 5, 20, 0.5);
+}
+
+[data-theme="dark"] {
+  /* Dark Mode Semantic Surfaces (Luxurious Deep Plum & Charcoal) */
+  --bg-app: #0F0811;
+  --bg-surface: #180D1C;
+  --bg-subtle: #211226;
+  --bg-elevated: #28162E;
+  --border-subtle: #331A3B;
+  --border-strong: #4B2757;
+  --text-main: #FBF8FA;
+  --text-muted: #B8A5B6;
+  --text-dim: #7F6B7E;
+  --accent-plum: #A74490;
+  --accent-plum-hover: #C76DB3;
+  --accent-coral: #F94B35;
+  --accent-teal: #26B896;
+  --card-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 2px 8px -2px rgba(167, 68, 144, 0.15);
+  --modal-overlay: rgba(5, 2, 6, 0.8);
+}
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(167, 68, 144, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 68, 144, 0.45);
+}
+
+/* Radar & Pulse Animations */
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ping-subtle {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+@keyframes sos-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(249, 75, 53, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(249, 75, 53, 0);
+  }
+}
+
+.animate-radar {
+  animation: radar-sweep 4s linear infinite;
+}
+
+.animate-ping-subtle {
+  animation: ping-subtle 2s ease-in-out infinite;
+}
+
+.animate-sos {
+  animation: sos-pulse 1.8s ease-in-out infinite;
+}
+
+/* Glassmorphism helpers */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .glass-panel {
+  background: rgba(24, 13, 28, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Table accessibility and sticky header */
+.data-table-container {
+  overflow: auto;
+  max-inline-size: 100%;
+  container-type: inline-size;
+}
+
+.data-table-container thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+}
