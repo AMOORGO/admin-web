@@ -1,0 +1,21 @@
+# Netlify build settings for the AMOORGO admin console (Next.js).
+# Netlify's Next.js runtime is detected automatically; leave "Publish directory" at its default.
+# Set NEXT_PUBLIC_API_URL in Netlify (Site configuration -> Environment variables) BEFORE building:
+# it is inlined into the browser bundle, so changing it requires a new deploy.
+
+[build]
+  command = "pnpm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# The console handles staff sessions and personal data: never let it be framed or sniffed, and keep it out of search engines.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Robots-Tag = "noindex, nofollow"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
