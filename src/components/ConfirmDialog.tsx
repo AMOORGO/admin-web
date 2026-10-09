@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, Loader2, X } from "lucide-react";
+import { errorMessage } from "@/lib/api";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -12,9 +13,20 @@ interface ConfirmDialogProps {
   cancelText?: string;
   isDestructive?: boolean;
   requireReason?: boolean;
+  /** Minimum reason length (backend commonly requires 3; the console asks for 6). */
+  minReasonLength?: number;
   reasonPlaceholder?: string;
-  onConfirm: (reason: string) => void;
+  /**
+   * Called with the trimmed reason. May be async: while it runs the dialog shows a spinner and blocks double submits;
+   * if it throws (or returns false) the dialog stays open and shows the error so the operator can retry.
+   * The caller closes the dialog (isOpen=false) after success.
+   */
+  onConfirm: (reason: string) => void | boolean | Promise<void | boolean>;
   onCancel: () => void;
+  /** Extra fields rendered between the description and the reason box (amounts, selects ...). */
+  children?: React.ReactNode;
+  /** Disable the confirm button (e.g. required child fields missing). */
+  confirmDisabled?: boolean;
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -26,26 +38,39 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   cancelText = "Cancel",
   isDestructive = true,
   requireReason = true,
+  minReasonLength = 6,
   reasonPlaceholder = "Provide a mandatory operational justification for the audit trail...",
   onConfirm,
   onCancel,
+  children,
+  confirmDisabled = false,
 }) => {
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
-    if (requireReason && (!reason || reason.trim().length < 6)) {
-      setError("Please provide a detailed audit justification (minimum 6 characters).");
+  const handleConfirm = async () => {
+    if (pending) return;
+    if (requireReason && (!reason || reason.trim().length < minReasonLength)) {
+      setError(`Please provide a detailed audit justification (minimum ${minReasonLength} characters).`);
       return;
     }
     setError("");
-    onConfirm(reason.trim());
-    setReason("");
+    setPending(true);
+    try {
+      const result = await onConfirm(reason.trim());
+      if (result !== false) setReason("");
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setPending(false);
+    }
   };
 
   const handleClose = () => {
+    if (pending) return;
     setReason("");
     setError("");
     onCancel();
@@ -71,14 +96,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                {title}
-              </h3>
-              {targetEntityLabel && (
-                <span className="text-xs font-mono text-[#F94B35]">
-                  Target: {targetEntityLabel}
-                </span>
-              )}
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
+              {targetEntityLabel && <span className="text-xs font-mono text-[#F94B35]">Target: {targetEntityLabel}</span>}
             </div>
           </div>
           <button
@@ -91,9 +110,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
         {/* Body */}
         <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-            {description}
-          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{description}</p>
+
+          {children}
 
           {requireReason && (
             <div className="space-y-1.5">
@@ -107,18 +126,19 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                   if (error) setError("");
                 }}
                 rows={3}
+                maxLength={300}
                 placeholder={reasonPlaceholder}
                 className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] p-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#7A2B66] focus:outline-none focus:ring-1 focus:ring-[#7A2B66]"
               />
-              {error && (
-                <p className="text-xs font-medium text-[#F94B35] animate-shake">
-                  {error}
-                </p>
-              )}
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
                 This note will be permanently recorded in the immutable audit log with your staff identity and IP.
               </p>
             </div>
+          )}
+          {error && (
+            <p role="alert" className="text-xs font-medium text-[#F94B35] break-words">
+              {error}
+            </p>
           )}
         </div>
 
@@ -127,19 +147,22 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-[#28162E] transition-colors"
+            disabled={pending}
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-[#28162E] transition-colors disabled:opacity-50"
           >
             {cancelText}
           </button>
           <button
             type="button"
             onClick={handleConfirm}
-            className={`rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition-all ${
+            disabled={pending || confirmDisabled}
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
               isDestructive
                 ? "bg-[#D93320] hover:bg-[#B02414] focus:ring-2 focus:ring-[#F94B35]"
                 : "bg-[#3A102F] hover:bg-[#521A44] dark:bg-[#7A2B66] dark:hover:bg-[#A74490] focus:ring-2 focus:ring-[#7A2B66]"
             }`}
           >
+            {pending && <Loader2 className="h-4 w-4 animate-spin" />}
             {confirmText}
           </button>
         </div>

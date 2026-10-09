@@ -15,10 +15,9 @@ import {
   ScrollText,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
 } from "lucide-react";
-import { StaffRole, PermissionKey } from "@/types";
-import { hasPermission } from "@/utils/permissions";
+import { PermissionKey } from "@/types";
+import { useAuth } from "@/lib/auth/AuthProvider";
 
 export type AdminTab =
   | "dashboard"
@@ -37,9 +36,10 @@ export type AdminTab =
 interface SidebarProps {
   currentTab: AdminTab;
   onSelectTab: (tab: AdminTab) => void;
-  activeRole: StaffRole;
   pendingKycCount: number;
   activeSosCount: number;
+  pendingSecondChanceCount: number;
+  pendingRefundsCount: number;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
@@ -61,12 +61,14 @@ interface NavSection {
 export const Sidebar: React.FC<SidebarProps> = ({
   currentTab,
   onSelectTab,
-  activeRole,
   pendingKycCount,
   activeSosCount,
+  pendingSecondChanceCount,
+  pendingRefundsCount,
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { can } = useAuth();
   const sections: NavSection[] = [
     {
       title: "OPERATIONS",
@@ -113,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: "Second Chance Program",
           icon: HeartHandshake,
           permission: "second_chance.manage",
-          badge: 2,
+          badge: pendingSecondChanceCount,
           badgeVariant: "coral",
         },
       ],
@@ -145,6 +147,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           label: "Payments & Ledger",
           icon: Wallet,
           permission: "finance.view",
+          badge: pendingRefundsCount,
+          badgeVariant: "plum",
         },
       ],
     },
@@ -161,7 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: "staff",
           label: "Staff & Role RBAC",
           icon: UserCog,
-          permission: "staff.manage",
+          permission: "staff.view",
         },
         {
           id: "audit",
@@ -182,10 +186,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Scrollable Nav Area */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {sections.map((section, sIdx) => {
-          // Filter items based on active role permissions
-          const visibleItems = section.items.filter((item) =>
-            hasPermission(activeRole, item.permission)
-          );
+          // Only show what the signed-in staff member is permitted to open
+          const visibleItems = section.items.filter((item) => can(item.permission));
 
           if (visibleItems.length === 0) return null;
 

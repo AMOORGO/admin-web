@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "AmoorGo — Super Admin Console | Operations & Fleet Command",
@@ -33,7 +34,7 @@ export default function RootLayout({
         className="min-h-screen font-sans selection:bg-[#3A102F] selection:text-white"
         style={{ fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" }}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -1,29 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
 import {
-  Bell,
-  Search,
   Moon,
   Sun,
   Shield,
   Siren,
-  ChevronDown,
   Globe,
-  Radio,
-  User,
   LogOut,
-  Sparkles,
 } from "lucide-react";
-import { StaffUser, StaffRole, SOSIncident } from "@/types";
-import { Badge } from "./Badge";
+import { SOSIncident } from "@/types";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useCities } from "@/lib/cities/CityProvider";
+import { applyTheme, getTheme, setTheme, subscribeTheme, type Theme } from "@/lib/theme";
+import { avatarFor, humanize } from "@/lib/format";
 
 interface NavbarProps {
-  currentUser: StaffUser;
-  activeRole: StaffRole;
-  onChangeRole: (role: StaffRole) => void;
-  selectedCity: string;
-  onChangeCity: (city: string) => void;
   activeRidesCount: number;
   onlineCaptainsCount: number;
   activeSosIncident?: SOSIncident | null;
@@ -31,54 +23,26 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  currentUser,
-  activeRole,
-  onChangeRole,
-  selectedCity,
-  onChangeCity,
   activeRidesCount,
   onlineCaptainsCount,
   activeSosIncident,
   onOpenSOSModal,
 }) => {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const { user, logout } = useAuth();
+  const { cities, selectedCityId, setSelectedCityId } = useCities();
+  const theme = useSyncExternalStore(subscribeTheme, getTheme, () => "light" as Theme);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
+  // Apply the stored theme to <html> after hydration (DOM only; no React state involved).
   useEffect(() => {
-    const savedTheme = (localStorage.getItem("amoorgo-theme") as "light" | "dark") || "light";
-    setTheme(savedTheme);
-    document.documentElement.setAttribute("data-theme", savedTheme);
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
-  const toggleTheme = () => {
-    const nextTheme = theme === "light" ? "dark" : "light";
-    setTheme(nextTheme);
-    localStorage.setItem("amoorgo-theme", nextTheme);
-    document.documentElement.setAttribute("data-theme", nextTheme);
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
+  const toggleTheme = () => setTheme(theme === "light" ? "dark" : "light");
 
-  const cities = ["All Cities", "Austin", "Dallas", "Houston", "Bengaluru", "Mumbai"];
-
-  const roleOptions: { role: StaffRole; label: string; desc: string }[] = [
-    { role: "SUPER_ADMIN", label: "Super Admin", desc: "Full root access across all domains" },
-    { role: "OPERATIONS_ADMIN", label: "Operations Admin", desc: "Fleet, rides & safety interventions" },
-    { role: "CAPTAIN_OPS", label: "Captain Ops", desc: "Driver KYC approvals & Second Chance" },
-    { role: "FINANCE_ADMIN", label: "Finance Admin", desc: "Transactions, payouts & refund limits" },
-    { role: "SUPPORT_AGENT", label: "Support Agent", desc: "Passenger & ride disputes" },
-    { role: "READ_ONLY", label: "Read Only", desc: "Auditing & analytics viewing" },
-  ];
+  const roleLabel = (user?.roles ?? []).map((r) => humanize(r)).join(", ") || "No role";
+  const scopeLabel = user && user.cityScope.length > 0 ? `${user.cityScope.length} city scope` : "All cities";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[#F0E3ED] dark:border-[#331A3B] bg-white/95 dark:bg-[#180D1C]/95 backdrop-blur-md transition-colors">
@@ -106,13 +70,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden md:flex items-center gap-2 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] px-3 py-1.5 text-xs">
             <Globe className="h-3.5 w-3.5 text-slate-400" />
             <select
-              value={selectedCity}
-              onChange={(e) => onChangeCity(e.target.value)}
+              value={selectedCityId ?? ""}
+              onChange={(e) => setSelectedCityId(e.target.value || null)}
+              aria-label="City filter"
               className="bg-transparent font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
             >
+              <option value="" className="bg-white dark:bg-[#180D1C]">
+                All Cities
+              </option>
               {cities.map((c) => (
-                <option key={c} value={c} className="bg-white dark:bg-[#180D1C]">
-                  {c}
+                <option key={c.id} value={c.id} className="bg-white dark:bg-[#180D1C]">
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -137,7 +105,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </div>
 
-        {/* Right: Actions, SOS Alert, Role Simulator, Profile */}
+        {/* Right: SOS alert, role, theme, profile */}
         <div className="flex items-center gap-3">
           {/* Active Emergency Beacon */}
           {activeSosIncident && (
@@ -150,49 +118,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Role Preview Switcher Simulator */}
-          <div className="relative">
-            <button
-              onClick={() => setShowRoleMenu(!showRoleMenu)}
-              className="flex items-center gap-2 rounded-xl border border-[#E9BFDF] dark:border-[#521A44] bg-[#FAF0F7] dark:bg-[#331A3B] px-3 py-1.5 text-xs font-bold text-[#521A44] dark:text-[#E9BFDF] hover:opacity-90 transition-all shadow-xs"
-            >
-              <Shield className="h-3.5 w-3.5 text-[#7A2B66] dark:text-[#DB99CC]" />
-              <span className="hidden sm:inline">Role:</span>
-              <span>{activeRole.replace("_", " ")}</span>
-              <ChevronDown className="h-3 w-3 opacity-60" />
-            </button>
-
-            {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-150 z-50">
-                <div className="px-3 py-2 border-b border-slate-100 dark:border-[#331A3B]">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    Switch Active RBAC Persona
-                  </p>
-                  <p className="text-[11px] text-slate-500">
-                    Test live permission gates & interventions across roles
-                  </p>
-                </div>
-                <div className="space-y-1 mt-1">
-                  {roleOptions.map((opt) => (
-                    <button
-                      key={opt.role}
-                      onClick={() => {
-                        onChangeRole(opt.role);
-                        setShowRoleMenu(false);
-                      }}
-                      className={`w-full text-left rounded-xl p-2 text-xs transition-colors flex flex-col ${
-                        activeRole === opt.role
-                          ? "bg-[#FAF0F7] dark:bg-[#331A3B] text-[#7A2B66] dark:text-[#E9BFDF] font-bold"
-                          : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#28162E]"
-                      }`}
-                    >
-                      <span className="font-semibold">{opt.label}</span>
-                      <span className="text-[10px] text-slate-400">{opt.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+          {/* Signed-in role(s): permissions come from the backend, not from a client-side switcher */}
+          <div
+            className="flex items-center gap-2 rounded-xl border border-[#E9BFDF] dark:border-[#521A44] bg-[#FAF0F7] dark:bg-[#331A3B] px-3 py-1.5 text-xs font-bold text-[#521A44] dark:text-[#E9BFDF]"
+            title={(user?.permissions ?? []).join(", ")}
+          >
+            <Shield className="h-3.5 w-3.5 text-[#7A2B66] dark:text-[#DB99CC]" />
+            <span className="hidden sm:inline">Role:</span>
+            <span>{roleLabel}</span>
           </div>
 
           {/* Theme Toggle Button */}
@@ -214,16 +147,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 rounded-xl p-1.5 hover:bg-slate-100 dark:hover:bg-[#28162E] transition-colors"
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
+                src={avatarFor(user?.name, user?.avatarUrl)}
+                alt={user?.name ?? "Staff"}
                 className="h-8 w-8 rounded-full object-cover border border-[#7A2B66]"
               />
               <div className="hidden xl:block text-left">
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  {currentUser.name}
+                  {(user?.name ?? "")}
                 </p>
-                <p className="text-[10px] text-slate-400">{currentUser.email}</p>
+                <p className="text-[10px] text-slate-400">{(user?.email ?? "")}</p>
               </div>
             </button>
 
@@ -231,24 +165,29 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-150 z-50 space-y-2">
                 <div className="border-b border-slate-100 dark:border-[#331A3B] pb-2">
                   <p className="text-xs font-bold text-slate-900 dark:text-white">
-                    {currentUser.name}
+                    {(user?.name ?? "")}
                   </p>
-                  <p className="text-[11px] text-slate-500">{currentUser.email}</p>
+                  <p className="text-[11px] text-slate-500">{(user?.email ?? "")}</p>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
                     <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-                      2FA Active • TOTP Verified
+                      {user?.totpEnabled ? "2FA Active • TOTP Verified" : "2FA not enabled"}
                     </span>
                   </div>
                 </div>
 
                 <div className="text-[11px] text-slate-500 space-y-1">
-                  <p>Scope: {currentUser.cityScope.join(", ")}</p>
-                  <p>Session: {currentUser.lastLogin}</p>
+                  <p>Scope: {scopeLabel}</p>
+                  <p>Last sign-in: {user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString() : "—"}</p>
                 </div>
 
                 <button
-                  onClick={() => setShowUserMenu(false)}
+                  onClick={async () => {
+                    setSigningOut(true);
+                    setShowUserMenu(false);
+                    await logout();
+                  }}
+                  disabled={signingOut}
                   className="w-full rounded-xl bg-slate-50 dark:bg-[#211226] text-slate-700 dark:text-slate-300 py-1.5 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-[#28162E] transition-colors flex items-center justify-center gap-1.5"
                 >
                   <LogOut className="h-3.5 w-3.5" />

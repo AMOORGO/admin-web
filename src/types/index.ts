@@ -1,36 +1,48 @@
+/** System role keys; custom roles created in the console are arbitrary strings, hence the widened tail. */
 export type StaffRole =
   | "SUPER_ADMIN"
   | "OPERATIONS_ADMIN"
   | "CAPTAIN_OPS"
   | "FINANCE_ADMIN"
   | "SUPPORT_AGENT"
-  | "READ_ONLY";
+  | "READ_ONLY"
+  | (string & {});
 
+/** Permission keys, identical to the backend catalogue (GET /admin/permissions). */
 export type PermissionKey =
   | "dashboard.view"
   | "rides.view"
   | "rides.reassign"
   | "rides.cancel"
   | "rides.adjust_fare"
+  | "rides.change_status"
   | "users.view"
+  | "users.edit"
   | "users.suspend"
   | "captains.view"
+  | "captains.edit"
   | "captains.approve"
   | "captains.review_docs"
   | "captains.suspend"
   | "second_chance.manage"
   | "finance.view"
   | "finance.refund"
+  | "finance.refund_approve"
   | "finance.payouts"
-  | "safety.manage"
+  | "promotions.manage"
+  | "ratings.moderate"
   | "support.manage"
+  | "safety.manage"
+  | "notifications.manage"
   | "config.view"
   | "config.edit"
+  | "staff.view"
   | "staff.create"
   | "staff.manage"
   | "roles.manage"
   | "audit.view"
-  | "reports.export";
+  | "reports.export"
+  | "system.view";
 
 export interface StaffUser {
   id: string;
