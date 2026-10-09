@@ -1,5 +1,6 @@
-import { API_BASE, DEFAULT_TIMEOUT_MS } from "../config";
+import { API_BASE, DEFAULT_TIMEOUT_MS, DEMO_ENABLED } from "../config";
 import { tokenStore } from "../auth/tokenStore";
+import { isDemoSession } from "../demo/flag";
 import { ApiError } from "./errors";
 import type { Envelope, Page, QueryParams, RequestOptions } from "./types";
 
@@ -156,6 +157,33 @@ export async function getAccessToken(): Promise<string | null> {
   }
 }
 
+// ── Demo transport (only reachable when NEXT_PUBLIC_DEMO_MODE=true and a demo session is active) ──
+
+function demoQuery(query: QueryParams | undefined): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value === undefined || value === null || value === "") continue;
+    out[key] = Array.isArray(value) ? value.join(",") : String(value);
+  }
+  return out;
+}
+
+/** Answers the request from the in-memory demo backend (dynamically imported, so it is not part of the normal bundle path). */
+async function demoRequest(method: Method, path: string, opts: RequestOptions): Promise<{ res: Response; body: unknown }> {
+  const headers: Record<string, string> = {};
+  for (const [k, v] of Object.entries(opts.headers ?? {})) headers[k.toLowerCase()] = v;
+  try {
+    const demo = await import("../demo");
+    const out = await demo.handleDemoRequest({ method, path, query: demoQuery(opts.query), body: opts.body, headers, signal: opts.signal });
+    const isText = typeof out.body === "string";
+    const res = new Response(isText ? (out.body as string) : JSON.stringify(out.body), { status: out.status, headers: out.headers });
+    return { res, body: out.body };
+  } catch (e) {
+    if (opts.signal?.aborted || (e instanceof DOMException && e.name === "AbortError")) throw new ApiError({ status: 0, code: "ABORTED", message: "Request cancelled" });
+    throw new ApiError({ status: 500, code: "DEMO_ERROR", message: "The demo could not complete this request." });
+  }
+}
+
 // ── Core request ──────────────────────────────────────────────
 
 async function request(
@@ -164,6 +192,8 @@ async function request(
   opts: RequestOptions = {},
   readAs: "json" | "text" = "json",
 ): Promise<{ res: Response; body: unknown }> {
+  if (DEMO_ENABLED && isDemoSession()) return demoRequest(method, path, opts);
+
   const useAuth = opts.auth !== false;
   let token = useAuth ? await getAccessToken() : null;
   if (useAuth && !token) {

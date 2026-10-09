@@ -1,5 +1,6 @@
 import { io, type Socket } from "socket.io-client";
-import { API_ORIGIN } from "../config";
+import { API_ORIGIN, DEMO_ENABLED } from "../config";
+import { isDemoSession } from "../demo/flag";
 import { getAccessToken } from "../api";
 import { tokenStore } from "../auth/tokenStore";
 
@@ -30,6 +31,7 @@ class RealtimeClient {
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private retryDelay = 1000;
   private started = false;
+  private demoStop: (() => void) | null = null;
 
   // ── store contract ──
   subscribe = (l: () => void): (() => void) => {
@@ -50,6 +52,10 @@ class RealtimeClient {
   start(): void {
     if (this.started) return;
     this.started = true;
+    if (DEMO_ENABLED && isDemoSession()) {
+      this.startDemo();
+      return;
+    }
     this.setState("connecting");
     const socket = io(`${API_ORIGIN}/admin`, {
       autoConnect: false,
@@ -85,8 +91,21 @@ class RealtimeClient {
     socket.connect();
   }
 
+  /** Demo mode: no socket. A local simulation emits the same events through the same handler registry. */
+  private startDemo(): void {
+    this.setState("connected");
+    void import("../demo").then(({ startDemoRealtime }) => {
+      if (!this.started || this.demoStop) return;
+      this.demoStop = startDemoRealtime((event, payload) => {
+        this.handlers.get(event)?.forEach((h) => h(payload));
+      });
+    });
+  }
+
   stop(): void {
     this.started = false;
+    this.demoStop?.();
+    this.demoStop = null;
     if (this.retryTimer) clearTimeout(this.retryTimer);
     this.retryTimer = null;
     this.socket?.removeAllListeners();

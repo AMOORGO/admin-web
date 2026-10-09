@@ -28,7 +28,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeSosIncident,
   onOpenSOSModal,
 }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isDemo } = useAuth();
   const { cities, selectedCityId, setSelectedCityId } = useCities();
   const theme = useSyncExternalStore(subscribeTheme, getTheme, () => "light" as Theme);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -46,6 +46,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[#F0E3ED] dark:border-[#331A3B] bg-white/95 dark:bg-[#180D1C]/95 backdrop-blur-md transition-colors">
+      {isDemo && (
+        <div role="status" className="flex items-center justify-center gap-3 bg-[#3A102F] px-4 py-1.5 text-xs font-semibold text-white">
+          <span>Demo mode — sample data, changes are not saved</span>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            className="rounded-md border border-white/40 px-2 py-0.5 text-[11px] font-bold text-white transition-colors hover:bg-white hover:text-[#3A102F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            Exit demo
+          </button>
+        </div>
+      )}
       <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Left: Brand Identity & City Filter */}
         <div className="flex items-center gap-4 sm:gap-6">

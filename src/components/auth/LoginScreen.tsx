@@ -1,25 +1,27 @@
 "use client";
 
 import React, { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { errorMessage } from "@/lib/api";
+import { Loader2, PlayCircle } from "lucide-react";
+import { DEMO_ENABLED } from "@/lib/config";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { EnrolmentInfo } from "@/lib/auth/types";
-import { AuthShell, ErrorLine, TwoFactorPanel, fieldClass, primaryButtonClass } from "./AuthCard";
+import { AuthShell, ErrorLine, PasswordField, TwoFactorPanel, fieldClass, friendlyAuthError, primaryButtonClass, secondaryButtonClass } from "./AuthCard";
 
 type Step = { kind: "credentials" } | { kind: "twoFactor"; challengeToken: string; enrolment: EnrolmentInfo | null };
 
 export const LoginScreen: React.FC = () => {
-  const { login, startEnrolment, sessionNotice } = useAuth();
+  const { login, startEnrolment, startDemo, sessionNotice } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<Step>({ kind: "credentials" });
   const [pending, setPending] = useState(false);
+  const [demoPending, setDemoPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const busy = pending || demoPending;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pending) return;
+    if (busy) return;
     setPending(true);
     setError(null);
     try {
@@ -31,9 +33,21 @@ export const LoginScreen: React.FC = () => {
       }
       // AUTHENTICATED: AuthProvider flips to the console; nothing else to do.
     } catch (err) {
-      setError(errorMessage(err));
+      setError(friendlyAuthError(err));
     } finally {
       setPending(false);
+    }
+  };
+
+  const exploreDemo = async () => {
+    if (busy) return;
+    setDemoPending(true);
+    setError(null);
+    try {
+      await startDemo();
+    } catch {
+      setError("The demo could not be started. Reload the page and try again.");
+      setDemoPending(false);
     }
   };
 
@@ -50,7 +64,7 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <AuthShell title="Sign in" subtitle="Use your AmoorGo staff credentials.">
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" aria-busy={busy}>
         {sessionNotice && (
           <p role="status" className="rounded-lg bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-300">
             {sessionNotice}
@@ -60,20 +74,53 @@ export const LoginScreen: React.FC = () => {
           <label htmlFor="email" className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
             Email
           </label>
-          <input id="email" type="email" autoComplete="username" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} placeholder="you@amoorgo.com" />
+          <input
+            id="email"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            required
+            autoFocus
+            disabled={busy}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="name@amoorgo.com"
+            aria-invalid={error ? true : undefined}
+            className={`${fieldClass} disabled:cursor-not-allowed disabled:opacity-60`}
+          />
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="password" className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
-            Password
-          </label>
-          <input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={fieldClass} />
-        </div>
+        <PasswordField
+          id="password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          autoComplete="current-password"
+          placeholder="Enter your password"
+          disabled={busy}
+          invalid={!!error}
+        />
         <ErrorLine message={error} />
-        <button type="submit" disabled={pending || !email || !password} className={primaryButtonClass}>
-          {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-          Continue
+        <button type="submit" disabled={busy || !email.trim() || !password} className={primaryButtonClass}>
+          {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {pending ? "Signing in…" : "Continue"}
         </button>
       </form>
+
+      {DEMO_ENABLED && (
+        <div className="mt-6 border-t border-slate-100 dark:border-[#331A3B] pt-5">
+          <button type="button" onClick={exploreDemo} disabled={busy} aria-busy={demoPending} className={secondaryButtonClass}>
+            {demoPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <PlayCircle className="h-4 w-4" aria-hidden="true" />}
+            {demoPending ? "Opening demo…" : "Explore demo (no backend)"}
+          </button>
+          <p className="mt-2 text-center text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            Uses sample data only. Nothing is saved or sent to a server.
+          </p>
+        </div>
+      )}
     </AuthShell>
   );
 };

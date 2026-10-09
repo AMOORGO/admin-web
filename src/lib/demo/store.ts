@@ -7,6 +7,7 @@ import type { StaffMe } from "../auth/types";
 import type { ApiAuditEntry } from "../adapters/audit";
 import type { ApiCaptainDetail, ApiVehicle } from "../adapters/captains";
 import type {
+  ApiLedgerAccount,
   ApiLedgerEntry,
   ApiPayment,
   ApiPayout,
@@ -18,7 +19,6 @@ import type { ApiPermissionGroup, ApiRole, ApiStaff } from "../adapters/iam";
 import type {
   ApiCancellationPolicy,
   ApiCityFull,
-  ApiConfigEntry,
   ApiIntegration,
   ApiPricingRule,
   ApiServiceType,
@@ -28,7 +28,7 @@ import type {
 import type { ApiDispatchAttempt, ApiRideRecord, ApiRidePayment, ApiTimelineStep } from "../adapters/rides";
 import type { ApiIncidentDetail } from "../adapters/safety";
 import type { ApiScDetail } from "../adapters/secondChance";
-import type { ApiLedgerAccount, ApiUserDetail } from "../adapters/users";
+import type { ApiUserDetail } from "../adapters/users";
 import { buildStore } from "./seed";
 import { iso, uuid } from "./util";
 

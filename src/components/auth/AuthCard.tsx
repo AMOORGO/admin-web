@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Copy, Check, KeyRound, Loader2 } from "lucide-react";
-import { errorMessage } from "@/lib/api";
+import { Copy, Check, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react";
+import { errorMessage, isApiError } from "@/lib/api";
+import { DEMO_ENABLED } from "@/lib/config";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { EnrolmentInfo } from "@/lib/auth/types";
 
@@ -35,6 +36,97 @@ export const fieldClass =
 
 export const primaryButtonClass =
   "flex w-full items-center justify-center gap-2 rounded-xl bg-[#3A102F] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#521A44] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#7A2B66] dark:hover:bg-[#A74490]";
+
+/** Message for a failed auth call: connection problems get a friendly line instead of a raw fetch error. */
+export function friendlyAuthError(err: unknown): string {
+  if (isApiError(err) && (err.isNetwork || err.code === "TIMEOUT")) {
+    return DEMO_ENABLED
+      ? "Can't reach the AmoorGo API right now. Check your connection or try the demo."
+      : "Can't reach the AmoorGo API right now. Check your connection and try again.";
+  }
+  return errorMessage(err);
+}
+
+interface PasswordFieldProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete: "current-password" | "new-password";
+  placeholder: string;
+  disabled?: boolean;
+  minLength?: number;
+  autoFocus?: boolean;
+  invalid?: boolean;
+  describedBy?: string;
+}
+
+/** Password input with a show / hide toggle and a Caps Lock hint. */
+export const PasswordField: React.FC<PasswordFieldProps> = ({
+  id,
+  label,
+  value,
+  onChange,
+  autoComplete,
+  placeholder,
+  disabled,
+  minLength,
+  autoFocus,
+  invalid,
+  describedBy,
+}) => {
+  const [visible, setVisible] = useState(false);
+  const [capsOn, setCapsOn] = useState(false);
+  const hintId = `${id}-caps`;
+  const trackCaps = (e: React.KeyboardEvent<HTMLInputElement>) => setCapsOn(e.getModifierState("CapsLock"));
+  const described = [describedBy, capsOn ? hintId : undefined].filter(Boolean).join(" ");
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={id} className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          name={id}
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          required
+          minLength={minLength}
+          autoFocus={autoFocus}
+          disabled={disabled}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={trackCaps}
+          onKeyUp={trackCaps}
+          onBlur={() => setCapsOn(false)}
+          placeholder={placeholder}
+          aria-invalid={invalid ? true : undefined}
+          aria-describedby={described || undefined}
+          className={`${fieldClass} pr-11 disabled:cursor-not-allowed disabled:opacity-60`}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((v) => !v)}
+          disabled={disabled}
+          aria-label={visible ? "Hide password" : "Show password"}
+          aria-pressed={visible}
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-400 hover:text-slate-700 focus-visible:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A2B66] disabled:opacity-50 dark:hover:text-slate-200"
+        >
+          {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+        </button>
+      </div>
+      {capsOn && (
+        <p id={hintId} role="status" className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+          Caps Lock is on.
+        </p>
+      )}
+    </div>
+  );
+};
 
 export const ErrorLine: React.FC<{ message: string | null }> = ({ message }) =>
   message ? (
@@ -80,7 +172,7 @@ export const TwoFactorPanel: React.FC<{
       await verifyTwoFactor(challengeToken, code);
       onDone?.();
     } catch (err) {
-      setError(errorMessage(err));
+      setError(friendlyAuthError(err));
       setPending(false);
     }
   };
@@ -124,20 +216,29 @@ export const TwoFactorPanel: React.FC<{
         </label>
         <input
           id="totp"
+          name="totp"
+          type="text"
           inputMode="numeric"
+          pattern="[0-9]*"
           autoComplete="one-time-code"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           autoFocus
           maxLength={6}
+          disabled={pending}
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="123456"
-          className={`${fieldClass} text-center font-mono text-lg tracking-[0.4em]`}
+          placeholder="6-digit code"
+          aria-label="Authenticator code (6 digits)"
+          aria-invalid={error ? true : undefined}
+          className={`${fieldClass} text-center font-mono text-lg tracking-[0.4em] placeholder:font-sans placeholder:text-sm placeholder:tracking-normal disabled:cursor-not-allowed disabled:opacity-60`}
         />
       </div>
       <ErrorLine message={error} />
-      <button type="submit" disabled={pending} className={primaryButtonClass}>
-        {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-        {enrolment ? "Verify & finish setup" : "Verify & sign in"}
+      <button type="submit" disabled={pending || code.length !== 6} aria-busy={pending} className={primaryButtonClass}>
+        {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+        {pending ? "Verifying…" : enrolment ? "Verify & finish setup" : "Verify & sign in"}
       </button>
       <button type="button" onClick={onBack} disabled={pending} className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
         Back to sign in
@@ -145,3 +246,6 @@ export const TwoFactorPanel: React.FC<{
     </form>
   );
 };
+
+export const secondaryButtonClass =
+  "flex w-full items-center justify-center gap-2 rounded-xl border border-[#E9BFDF] dark:border-[#521A44] bg-[#FAF0F7] dark:bg-[#331A3B]/50 px-4 py-2.5 text-sm font-bold text-[#521A44] dark:text-[#E9BFDF] transition-all hover:bg-[#F3DFEC] dark:hover:bg-[#331A3B] disabled:cursor-not-allowed disabled:opacity-60";

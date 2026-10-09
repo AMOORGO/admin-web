@@ -3,10 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { errorMessage } from "@/lib/api";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import type { EnrolmentInfo } from "@/lib/auth/types";
-import { AuthShell, ErrorLine, TwoFactorPanel, fieldClass, primaryButtonClass } from "./AuthCard";
+import { AuthShell, ErrorLine, PasswordField, TwoFactorPanel, friendlyAuthError, primaryButtonClass } from "./AuthCard";
 
 type Step = { kind: "password" } | { kind: "twoFactor"; challengeToken: string; enrolment: EnrolmentInfo | null };
 
@@ -44,7 +43,7 @@ export const AcceptInviteScreen: React.FC<{ token: string }> = ({ token }) => {
         setStep({ kind: "twoFactor", challengeToken: res.challengeToken, enrolment });
       }
     } catch (err) {
-      setError(errorMessage(err));
+      setError(friendlyAuthError(err));
     } finally {
       setPending(false);
     }
@@ -60,24 +59,39 @@ export const AcceptInviteScreen: React.FC<{ token: string }> = ({ token }) => {
 
   return (
     <AuthShell title="Accept your invitation" subtitle="Choose a password for your AmoorGo staff account.">
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="space-y-4" aria-busy={pending}>
         <div className="space-y-1.5">
-          <label htmlFor="new-password" className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
-            New password
-          </label>
-          <input id="new-password" type="password" autoComplete="new-password" required minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} className={fieldClass} />
-          <p className="text-[11px] text-slate-400">At least 12 characters; must not contain your name or e-mail.</p>
+          <PasswordField
+            id="new-password"
+            label="New password"
+            value={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+            placeholder="At least 12 characters"
+            minLength={12}
+            autoFocus
+            disabled={pending}
+            invalid={!!error}
+            describedBy="new-password-hint"
+          />
+          <p id="new-password-hint" className="text-[11px] text-slate-400">
+            At least 12 characters; must not contain your name or e-mail.
+          </p>
         </div>
-        <div className="space-y-1.5">
-          <label htmlFor="confirm-password" className="block text-xs font-semibold text-slate-700 dark:text-slate-200">
-            Confirm password
-          </label>
-          <input id="confirm-password" type="password" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} className={fieldClass} />
-        </div>
+        <PasswordField
+          id="confirm-password"
+          label="Confirm password"
+          value={confirm}
+          onChange={setConfirm}
+          autoComplete="new-password"
+          placeholder="Re-enter your new password"
+          disabled={pending}
+          invalid={!!error}
+        />
         <ErrorLine message={error} />
-        <button type="submit" disabled={pending} className={primaryButtonClass}>
-          {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-          Activate account
+        <button type="submit" disabled={pending || !password || !confirm} aria-busy={pending} className={primaryButtonClass}>
+          {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+          {pending ? "Activating…" : "Activate account"}
         </button>
       </form>
     </AuthShell>

@@ -2,6 +2,8 @@
  * Staff session tokens. Kept in module memory and mirrored to sessionStorage (per-tab, cleared when the tab closes).
  * Never localStorage. Implements the external-store contract so React can subscribe with useSyncExternalStore.
  */
+import { setDemoSession } from "../demo/flag";
+
 export interface StoredSession {
   accessToken: string;
   refreshToken: string;
@@ -80,6 +82,8 @@ export const tokenStore = {
     lastReason = reason;
     session = null;
     writeStorage(null);
+    // A demo session cannot outlive its (synthetic) tokens.
+    setDemoSession(false);
     notify();
   },
 
