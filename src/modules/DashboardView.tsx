@@ -119,16 +119,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
   const trendQ = useQuery<TrendDay[]>(
     `dash-trend:${selectedCityId ?? "all"}`,
     async (signal) => {
-      const days = [6, 5, 4, 3, 2, 1, 0].map((back) => {
-        const start = new Date();
-        start.setHours(0, 0, 0, 0);
-        start.setDate(start.getDate() - back);
-        const end = new Date(start);
-        end.setDate(end.getDate() + 1);
-        return { date: localDate(back), from: start.toISOString(), to: end.toISOString() };
-      });
-      const results = await Promise.all(days.map((d) => api.get<ApiKpis>("/admin/dashboard/kpis", { query: { cityId: selectedCityId, from: d.from, to: d.to }, signal })));
-      return results.map((k, i) => toTrendDay(days[i].date, k));
+      // Today = the API's own "today" (platform timezone); earlier days are 24 h steps back from its start.
+      const today = await api.get<ApiKpis>("/admin/dashboard/kpis", { query: { cityId: selectedCityId }, signal });
+      const todayStart = new Date(today.period.from).getTime();
+      const windows = [6, 5, 4, 3, 2, 1].map((back) => ({
+        from: new Date(todayStart - back * 86_400_000).toISOString(),
+        to: new Date(todayStart - (back - 1) * 86_400_000).toISOString(),
+      }));
+      const earlier = await Promise.all(windows.map((w) => api.get<ApiKpis>("/admin/dashboard/kpis", { query: { cityId: selectedCityId, ...w }, signal })));
+      const label = (startMs: number) => {
+        const d = new Date(startMs + 12 * 3_600_000);
+        const p = (n: number) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+      };
+      return [...earlier.map((k, i) => toTrendDay(label(new Date(windows[i].from).getTime()), k)), toTrendDay(label(todayStart), today)];
     },
     { pollMs: 120_000 },
   );

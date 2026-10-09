@@ -295,7 +295,7 @@ const ImageCanvas: React.FC<{ url: string; alt: string; zoom: number; rot: numbe
   return (
     <div
       className="relative mx-auto shrink-0 overflow-hidden rounded-lg bg-white shadow-xl ring-1 ring-slate-300 dark:ring-[#4B2757]"
-      style={{ aspectRatio: String(aspect), width: `calc(min(100%, (100dvh - 22rem) * ${aspect.toFixed(4)}) * ${zoom})` }}
+      style={{ aspectRatio: String(aspect), width: `calc(min(100%, (100dvh - 27rem) * ${aspect.toFixed(4)}) * ${zoom})` }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
