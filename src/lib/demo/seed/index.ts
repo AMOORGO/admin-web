@@ -2,6 +2,7 @@
 import type { DemoStore } from "../store";
 import { seedFinance } from "./finance";
 import { seedGeo } from "./geo";
+import { seedHistory } from "./history";
 import { seedOps } from "./ops";
 import { seedPeople } from "./people";
 
@@ -19,6 +20,18 @@ export function buildStore(now: number): DemoStore {
     staff: people.staff,
   });
   const finance = seedFinance({ now, cities: geo.cities, riders: people.riders, captains: people.captains, rides: ops.rides, staff: people.staff });
+
+  // 30 days of trips per approved captain (profiles, earnings, revenue trend); not part of the finance sample.
+  const history = seedHistory({
+    now,
+    cities: geo.cities,
+    serviceTypes: geo.serviceTypes,
+    rules: geo.rules,
+    riders: people.riders,
+    captains: people.captains,
+    usedRefs: new Set(ops.rides.map((x) => x.rec.bookingRef)),
+  });
+  const rides = [...ops.rides, ...history].sort((a, b) => new Date(b.rec.requestedAt).getTime() - new Date(a.rec.requestedAt).getTime());
 
   return {
     me: people.me,
@@ -38,7 +51,7 @@ export function buildStore(now: number): DemoStore {
     permissionCatalogue: people.permissionCatalogue,
     riders: people.riders,
     captains: people.captains,
-    rides: ops.rides,
+    rides,
     incidents: ops.incidents,
     transactions: finance.transactions,
     payments: finance.payments,

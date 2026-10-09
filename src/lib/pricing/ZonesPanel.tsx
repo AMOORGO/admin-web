@@ -154,7 +154,7 @@ export const ZonesPanel: React.FC<{ city: ApiCityFull }> = ({ city }) => {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white break-words">{view.name}</h4>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">{view.city}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{view.city}</span>
                 </div>
                 <Badge variant={view.type === "HIGH_DEMAND" ? "coral" : view.type === "AIRPORT" ? "teal" : "plum"} size="sm">
                   {humanize(view.type)}
@@ -163,23 +163,23 @@ export const ZonesPanel: React.FC<{ city: ApiCityFull }> = ({ city }) => {
 
               <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#211226]">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Standing Surge</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Standing Surge</span>
                   <p className="font-mono font-bold text-[#D93320] dark:text-[#FF7361] mt-0.5">{view.surgeFactor.toFixed(2)}x</p>
                 </div>
                 <div className="p-2 rounded-xl bg-slate-50 dark:bg-[#211226]">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400">Rides</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Rides</span>
                   <p className={`font-bold mt-0.5 ${view.ridesEnabled ? "text-emerald-600" : "text-rose-600"}`}>{view.ridesEnabled ? "Enabled" : "Paused"}</p>
                 </div>
               </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
                 {z.bboxMinLat.toFixed(3)}, {z.bboxMinLng.toFixed(3)} → {z.bboxMaxLat.toFixed(3)}, {z.bboxMaxLng.toFixed(3)}
               </p>
-              <div className="flex flex-wrap gap-1.5 text-[10px]">
+              <div className="flex flex-wrap gap-1.5 text-xs">
                 {!view.isActive && <Badge variant="warning" size="sm">Inactive</Badge>}
                 {!view.allowPickup && <Badge variant="neutral" size="sm">No pickup</Badge>}
                 {!view.allowDropoff && <Badge variant="neutral" size="sm">No drop-off</Badge>}
               </div>
-              {!view.ridesEnabled && view.shutdownMessage && <p className="text-[10px] italic text-slate-500 dark:text-slate-400">&quot;{view.shutdownMessage}&quot;</p>}
+              {!view.ridesEnabled && view.shutdownMessage && <p className="text-xs italic text-slate-500 dark:text-slate-400">&quot;{view.shutdownMessage}&quot;</p>}
 
               <Can permission="config.edit">
                 <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100 dark:border-[#331A3B]">

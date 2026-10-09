@@ -2,6 +2,7 @@
 import type { ApiCaptainListItem, ApiQueueDocument, ApiSignedUrl, ApiStaffDocument } from "../../adapters/captains";
 import { placeholderPdf, placeholderSvg } from "../documents";
 import { refreshDerived, maskNumber } from "../logic/captain";
+import { earningsOverview } from "../logic/earnings";
 import { inScope } from "../logic/scope";
 import { type Ctx, type Router, listResult, ok } from "../router";
 import { type CaptainRow, captainById, recordAudit } from "../store";
@@ -80,6 +81,12 @@ export function registerCaptains(r: Router): void {
     const c = captainOr404(ctx);
     refreshDerived(c.d, Date.now());
     return ok(c.d);
+  });
+
+  // One call for the captain profile: today / week / month / lifetime, 14-day series, payout position, latest earnings.
+  r.get("/admin/captains/:id/earnings/overview", (ctx) => {
+    const c = captainOr404(ctx);
+    return ok(earningsOverview(ctx.store, c.d.id, c.d.metrics.totalTrips, Date.now()));
   });
 
   // ── KYC document queue (any captain's documents, oldest upload first) ──

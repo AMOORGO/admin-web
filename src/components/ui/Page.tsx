@@ -21,7 +21,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, description, badg
         <h1 className="text-lg font-black leading-tight text-slate-900 dark:text-white sm:text-xl">{title}</h1>
         {badge}
       </div>
-      {description && <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">{description}</p>}
+      {description && <p className="mt-0.5 text-[13px] text-slate-600 dark:text-slate-300">{description}</p>}
     </div>
     {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
   </div>
@@ -38,7 +38,7 @@ export const FilterRow: React.FC<{ children: React.ReactNode; className?: string
 );
 
 export const fieldClass =
-  "min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-800 placeholder-slate-500 dark:border-[#331A3B] dark:bg-[#211226] dark:text-white lg:w-auto";
+  "min-h-10 w-full min-w-0 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-800 placeholder-slate-500 dark:border-[#331A3B] dark:bg-[#211226] dark:text-white lg:w-auto";
 
 interface ChipTabsProps<T extends string> {
   items: ReadonlyArray<{ id: T; label: React.ReactNode }>;
@@ -52,7 +52,7 @@ interface ChipTabsProps<T extends string> {
 /** Pill filter / status tabs. Wraps onto extra lines instead of hiding options behind a horizontal scroll. */
 export function ChipTabs<T extends string>({ items, value, onChange, label, className = "" }: ChipTabsProps<T>) {
   return (
-    <div role="group" aria-label={label} className={`flex flex-wrap gap-1.5 text-xs ${className}`}>
+    <div role="group" aria-label={label} className={`flex flex-wrap gap-1.5 text-[13px] ${className}`}>
       {items.map((it) => {
         const active = it.id === value;
         return (
@@ -97,7 +97,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({ value, onValueChange, 
 /** Section tabs (Finance, Pricing, Staff...): scrolls sideways when they do not fit, with the active one underlined. */
 export function SectionTabs<T extends string>({ items, value, onChange, label }: { items: ReadonlyArray<{ id: T; label: React.ReactNode }>; value: T; onChange: (id: T) => void; label: string }) {
   return (
-    <div role="tablist" aria-label={label} className="-mx-4 flex gap-5 overflow-x-auto border-b border-[#F0E3ED] px-4 text-xs font-bold dark:border-[#331A3B] sm:mx-0 sm:gap-6 sm:px-0">
+    <div role="tablist" aria-label={label} className="-mx-4 flex gap-5 overflow-x-auto border-b border-[#F0E3ED] px-4 text-[13px] font-bold dark:border-[#331A3B] sm:mx-0 sm:gap-6 sm:px-0">
       {items.map((it) => {
         const active = it.id === value;
         return (

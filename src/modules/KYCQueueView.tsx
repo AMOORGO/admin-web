@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { FileText, Car, ArrowRight, ShieldCheck, Clock } from "lucide-react";
+import { FileText, Car, ArrowRight, ShieldCheck, Clock, Users, UserCheck } from "lucide-react";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useQuery } from "@/lib/hooks/useQuery";
+import type { ApiAlerts } from "@/lib/adapters/dashboard";
 import { Badge } from "@/components/Badge";
 import { PageHeader } from "@/components/ui/Page";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -22,7 +27,7 @@ import { useOnInvalidate } from "@/lib/invalidate";
 
 interface KYCQueueViewProps {
   selectedCityId: string | null;
-  onOpenKYCViewer: (captainId: string) => void;
+  onOpenCaptain: (captainId: string, tab?: "documents" | "overview") => void;
 }
 
 interface QueueEntry {
@@ -46,7 +51,7 @@ interface QueueEntry {
  * Queue = captains with documents awaiting review (GET /admin/documents, PENDING) plus captains whose application
  * is SUBMITTED / UNDER_REVIEW (GET /admin/captains), merged per captain and sorted oldest first.
  */
-export const KYCQueueView: React.FC<KYCQueueViewProps> = ({ selectedCityId, onOpenKYCViewer }) => {
+export const KYCQueueView: React.FC<KYCQueueViewProps> = ({ selectedCityId, onOpenCaptain }) => {
   const { cities } = useCities();
   const base = useMemo(() => ({ cityId: selectedCityId ?? undefined }), [selectedCityId]);
   const docsQuery = useMemo(() => ({ ...base, status: "PENDING" }), [base]);
@@ -126,6 +131,11 @@ export const KYCQueueView: React.FC<KYCQueueViewProps> = ({ selectedCityId, onOp
   const applicationCount = entries.filter((e) => e.hasApplication).length;
   const oldest = entries[0]?.waitingSince ?? null;
   const more = hasMore ? "+" : "";
+  const oldestHours = oldest ? (now - new Date(oldest).getTime()) / 3_600_000 : null;
+  // Expiring documents come from the dashboard alerts (needs dashboard.view); hidden otherwise.
+  const { can } = useAuth();
+  const alertsQ = useQuery<ApiAlerts>(can("dashboard.view") ? `kyc-alerts:${selectedCityId ?? "all"}` : null, (signal) => api.get<ApiAlerts>("/admin/dashboard/alerts", { query: { cityId: selectedCityId }, signal }));
+  const expiring = alertsQ.data ? (alertsQ.data.items.find((i) => i.type === "DOCUMENTS_EXPIRING")?.count ?? 0) : null;
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
@@ -139,24 +149,19 @@ export const KYCQueueView: React.FC<KYCQueueViewProps> = ({ selectedCityId, onOp
         description="Verify driver licenses, vehicle registrations, commercial insurance, and background checks"
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Queue Size</span>
-          <p className="truncate font-mono font-black text-slate-900 dark:text-white">{entries.length}{more} Captains</p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Applications</span>
-          <p className="truncate font-mono font-black text-slate-900 dark:text-white">{applicationCount}{more}</p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Documents Pending</span>
-          <p className="truncate font-mono font-black text-slate-900 dark:text-white">{pendingDocCount}{more}</p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Oldest Waiting</span>
-          <p className="truncate font-mono font-black text-[#14755F] dark:text-[#4FD2B2]">{oldest ? timeAgo(oldest, now).replace(" ago", "") : "—"}</p>
-        </div>
-      </div>
+      <StatGrid cols={4}>
+        <StatCard label="Captains in queue" icon={Users} tone="brand" loading={initialLoading} value={`${entries.length}${more}`} hint="Applications and renewals" />
+        <StatCard label="Applications" icon={UserCheck} tone="info" loading={initialLoading} value={`${applicationCount}${more}`} hint="Submitted or under review" />
+        <StatCard label="Documents pending" icon={FileText} tone="warn" loading={initialLoading} value={`${pendingDocCount}${more}`} hint="Waiting for a decision" />
+        <StatCard
+          label="Oldest waiting"
+          icon={Clock}
+          tone={oldestHours !== null && oldestHours > 24 ? "bad" : "good"}
+          loading={initialLoading}
+          value={oldest ? timeAgo(oldest, now).replace(" ago", "") : "—"}
+          hint={expiring !== null ? `${expiring} approved ${expiring === 1 ? "captain has" : "captains have"} documents expiring soon` : "Longest time in the queue"}
+        />
+      </StatGrid>
 
       {error && <ErrorBanner error={error} title="Could not load the KYC queue" onRetry={refetchAll} />}
 
@@ -236,7 +241,7 @@ export const KYCQueueView: React.FC<KYCQueueViewProps> = ({ selectedCityId, onOp
                     >
                       <FileText className="h-3 w-3" />
                       <span className="font-semibold">{d.label}</span>
-                      <span className="text-[10px] uppercase font-bold">(!)</span>
+                      <span className="text-xs uppercase font-bold">(!)</span>
                     </div>
                   ))
                 )}
@@ -244,7 +249,7 @@ export const KYCQueueView: React.FC<KYCQueueViewProps> = ({ selectedCityId, onOp
 
               {/* Right: Inspection CTA */}
               <button
-                onClick={() => onOpenKYCViewer(cap.captainId)}
+                onClick={() => onOpenCaptain(cap.captainId, "documents")}
                 className="flex min-h-11 items-center justify-center gap-2 self-stretch whitespace-nowrap rounded-xl bg-[#3A102F] px-5 py-2.5 text-xs font-bold text-white shadow-md transition-colors hover:bg-[#521A44] dark:bg-[#7A2B66] dark:hover:bg-[#A74490] lg:self-auto"
               >
                 <span>Open Verification Workbench</span>

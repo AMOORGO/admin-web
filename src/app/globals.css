@@ -237,6 +237,52 @@ button, select, input, textarea {
   }
 }
 
+/* ── Table presentation (shared) ─────────────────────────────────────────────────────────────────────
+   Header row: 12px caps labels on a tinted band; rows: >=48px tall, hover + keyboard-focus highlight, numeric columns
+   right-aligned with tabular numerals (.num). Add .table-scroll-y to give a long table its own vertical scroller with a
+   sticky header. */
+@layer components {
+  .data-table-container > table {
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
+  }
+  .data-table-container thead th {
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background-color: var(--bg-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .data-table-container.sticky-first > table thead th:first-child {
+    z-index: 3;
+  }
+  .data-table-container tbody td {
+    height: 3rem;
+    vertical-align: middle;
+  }
+  .data-table-container tbody tr {
+    transition: background-color 0.12s ease;
+  }
+  .data-table-container tbody tr:hover,
+  .data-table-container tbody tr:focus-within {
+    background-color: color-mix(in srgb, var(--accent-plum) 7%, transparent);
+  }
+  .data-table-container th.num,
+  .data-table-container td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .data-table-container.table-scroll-y {
+    max-height: 30rem;
+    overflow-y: auto;
+  }
+}
+
 /* ── Overlay motion (the shared <Sheet>, mobile nav, fullscreen map) ─────────────────────────────────── */
 @keyframes anim-fade {
   from { opacity: 0; }

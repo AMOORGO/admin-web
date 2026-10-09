@@ -34,6 +34,8 @@ function filterAudit(ctx: Ctx): ApiAuditEntry[] {
   const { query } = ctx;
   return ctx.store.audit.filter((e) => {
     if (query.category && e.category !== query.category) return false;
+    if (query.targetType && (e.targetType ?? "").toLowerCase() !== query.targetType.toLowerCase()) return false;
+    if (query.targetId && e.targetId !== query.targetId) return false;
     if (!inRange(new Date(e.timestamp).getTime(), query.from, query.to)) return false;
     return matchesQuery(query.q, e.action, e.actor.name, e.actor.email, e.targetId, e.targetType, e.reasonNotes, e.category);
   });

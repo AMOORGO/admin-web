@@ -134,9 +134,9 @@ const RuleEditor: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; bas
       )}
       <Can
         permission="config.edit"
-        fallback={<p className="text-[11px] text-slate-500 dark:text-slate-400">You can view pricing but not change it (requires config.edit).</p>}
+        fallback={<p className="text-xs text-slate-500 dark:text-slate-400">You can view pricing but not change it (requires config.edit).</p>}
       >
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Rules are versioned: saving publishes a new version that applies immediately to new quotes; rides already priced keep the version they were quoted with.
         </p>
       </Can>
@@ -166,12 +166,12 @@ const RuleEditor: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; bas
             <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 dark:bg-[#211226] border border-slate-200 dark:border-[#331A3B] sm:col-span-2">
               <label className="font-bold text-slate-700 dark:text-slate-200">Effective From (optional)</label>
               <input type="datetime-local" disabled={!canEdit} value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} className={INPUT} />
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Empty = effective immediately. A later date schedules the version.</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Empty = effective immediately. A later date schedules the version.</span>
             </div>
             <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 dark:bg-[#211226] border border-slate-200 dark:border-[#331A3B] sm:col-span-2">
               <label className="font-bold text-slate-700 dark:text-slate-200">Effective Until (optional)</label>
               <input type="datetime-local" disabled={!canEdit} value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} className={INPUT} />
-              <span className="text-[10px] text-slate-500 dark:text-slate-400">Afterwards the next-highest version applies again.</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">Afterwards the next-highest version applies again.</span>
             </div>
           </div>
         )}
@@ -267,12 +267,12 @@ const FarePreview: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; fo
             ["Captain earning", b.captainEarningMinor],
           ].map(([label, value]) => (
             <div key={String(label)} className="rounded-xl bg-white dark:bg-[#180D1C] border border-slate-100 dark:border-[#331A3B] p-2.5">
-              <span className="text-[10px] uppercase text-slate-500 dark:text-slate-400">{label}</span>
+              <span className="text-xs uppercase text-slate-500 dark:text-slate-400">{label}</span>
               <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{m(Number(value))}</p>
             </div>
           ))}
           <div className="rounded-xl bg-[#EFFCF9] dark:bg-[#0D2620] p-2.5">
-            <span className="text-[10px] uppercase text-slate-500 dark:text-slate-400">Rider total</span>
+            <span className="text-xs uppercase text-slate-500 dark:text-slate-400">Rider total</span>
             <p className="font-mono font-black text-[#14755F] dark:text-[#82E5CB] mt-0.5">{m(result.totalMinor)}</p>
           </div>
         </div>
@@ -315,7 +315,7 @@ const VersionHistory: React.FC<{ versions: ApiPricingRule[]; now: number; servic
         <div className="data-table-container sticky-first">
           <table className="w-full min-w-[45rem] text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                 <th className="py-2 px-3">Version</th>
                 <th className="py-2 px-3">Status</th>
                 <th className="py-2 px-3">Base / Distance / Time / Min</th>

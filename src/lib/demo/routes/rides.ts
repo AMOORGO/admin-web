@@ -135,6 +135,8 @@ export function registerRides(r: Router): void {
       const rec = row.rec;
       if (!inScope(ctx.store, rec.cityId)) return false;
       if (query.cityId && rec.cityId !== query.cityId) return false;
+      if (query.captainId && rec.captainId !== query.captainId) return false;
+      if (query.riderId && rec.riderId !== query.riderId) return false;
       if (query.status && rec.status !== query.status) return false;
       if (statuses.length > 0 && !statuses.includes(rec.status)) return false;
       if (query.serviceType && rec.serviceType.code !== query.serviceType) return false;

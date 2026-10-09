@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Download, FileCode, Loader2 } from "lucide-react";
+import { Download, FileCode, Loader2, ScrollText, Users, Banknote, Clock } from "lucide-react";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { RelativeTime } from "@/components/ui/RelativeTime";
 import { Sheet } from "@/components/ui/Sheet";
 import { ChipTabs, FilterRow, PageHeader, SearchInput, Toolbar, fieldClass } from "@/components/ui/Page";
 import { Badge } from "@/components/Badge";
@@ -46,6 +48,9 @@ export const AuditLogsView: React.FC = () => {
   useOnInvalidate("audit", list.refetch);
   const logs = useMemo(() => list.items.map(toAuditEntry), [list.items]);
 
+  const actors = new Set(logs.map((l) => l.actorEmail || l.actorName)).size;
+  const sensitive = logs.filter((l) => l.category === "FINANCE" || l.category === "CONFIG").length;
+
   // The CSV endpoint needs both audit.view and reports.export, and the bearer header, so it is fetched and saved client-side.
   const exportCsv = useMutation(async () => {
     const file = await api.download("/admin/audit-logs/export", { query }, "audit-logs.csv");
@@ -78,6 +83,13 @@ export const AuditLogsView: React.FC = () => {
           ) : undefined
         }
       />
+
+      <StatGrid cols={4}>
+        <StatCard label="Events loaded" icon={ScrollText} tone="brand" loading={list.initialLoading} value={`${logs.length}${list.hasMore ? "+" : ""}`} hint="Matching the current filters" />
+        <StatCard label="Distinct actors" icon={Users} tone="info" loading={list.initialLoading} value={String(actors)} hint="Staff and system accounts" />
+        <StatCard label="Finance & config changes" icon={Banknote} tone="warn" loading={list.initialLoading} value={String(sensitive)} hint="Money and pricing interventions" />
+        <StatCard label="Latest event" icon={Clock} tone="good" loading={list.initialLoading} value={logs[0] ? <RelativeTime iso={logs[0].timestamp} /> : "—"} hint={logs[0] ? `${logs[0].actorName}: ${logs[0].action}` : undefined} />
+      </StatGrid>
 
       {/* Filter and Search Bar */}
       <Toolbar>
@@ -119,7 +131,7 @@ export const AuditLogsView: React.FC = () => {
           <div className="data-table-container sticky-first">
             <table className="w-full min-w-[60rem] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                   <th className="py-3 px-4">Timestamp</th>
                   <th className="py-3 px-4">Actor</th>
                   <th className="py-3 px-4">Action</th>
@@ -133,11 +145,11 @@ export const AuditLogsView: React.FC = () => {
               <tbody className="divide-y divide-slate-100 dark:divide-[#331A3B]">
                 {logs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-[#28162E]/30">
-                    <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateTime(log.timestamp)}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateTime(log.timestamp)}</td>
 
                     <td className="py-3 px-4">
                       <span className="font-bold text-slate-900 dark:text-white">{log.actorName}</span>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{log.actorRole}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{log.actorRole}</p>
                     </td>
 
                     <td className="py-3 px-4 font-mono font-bold text-[#7A2B66] dark:text-[#DB99CC]">{log.action}</td>
@@ -152,7 +164,7 @@ export const AuditLogsView: React.FC = () => {
                       {log.targetType}: {log.targetId}
                     </td>
 
-                    <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{log.ipAddress}</td>
+                    <td className="py-3 px-4 font-mono text-xs text-slate-500 dark:text-slate-400">{log.ipAddress}</td>
 
                     <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs truncate" title={log.reasonNotes ?? undefined}>
                       {log.reasonNotes || "Automated system trigger"}
@@ -194,7 +206,7 @@ export const AuditLogsView: React.FC = () => {
               <p className="break-words text-xs text-slate-600 dark:text-slate-300">
                 Target: {selectedLog.targetType} ({selectedLog.targetId}) • By {selectedLog.actorName}
               </p>
-              {selectedLog.requestId && <p className="break-all font-mono text-[10px] text-slate-600 dark:text-slate-300">Request ID: {selectedLog.requestId}</p>}
+              {selectedLog.requestId && <p className="break-all font-mono text-xs text-slate-600 dark:text-slate-300">Request ID: {selectedLog.requestId}</p>}
             </div>
           )
         }
@@ -210,13 +222,13 @@ export const AuditLogsView: React.FC = () => {
           <>
             <div className="grid grid-cols-1 gap-4 font-mono text-xs sm:grid-cols-2">
               <div className="min-w-0 space-y-1">
-                <span className="text-[10px] font-bold uppercase text-rose-700 dark:text-rose-400">Before State</span>
-                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-3 text-[11px] leading-relaxed text-rose-300">{JSON.stringify(selectedLog.diff.before, null, 2)}</pre>
+                <span className="text-xs font-bold uppercase text-rose-700 dark:text-rose-400">Before State</span>
+                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-3 text-xs leading-relaxed text-rose-300">{JSON.stringify(selectedLog.diff.before, null, 2)}</pre>
               </div>
 
               <div className="min-w-0 space-y-1">
-                <span className="text-[10px] font-bold uppercase text-emerald-700 dark:text-emerald-400">After State</span>
-                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-3 text-[11px] leading-relaxed text-emerald-300">{JSON.stringify(selectedLog.diff.after, null, 2)}</pre>
+                <span className="text-xs font-bold uppercase text-emerald-700 dark:text-emerald-400">After State</span>
+                <pre className="overflow-x-auto rounded-xl bg-slate-900 p-3 text-xs leading-relaxed text-emerald-300">{JSON.stringify(selectedLog.diff.after, null, 2)}</pre>
               </div>
             </div>
 

@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Wallet, Phone, Mail, Calendar, Flag, MapPin, Star, UserRound } from "lucide-react";
+import { Wallet, Phone, Mail, Calendar, Flag, MapPin, Star, UserRound, Users, UserCheck, Ban } from "lucide-react";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { PersonCell } from "@/components/ui/PersonCell";
+import { Money } from "@/components/ui/Money";
+import { countLabel, useListCount } from "@/lib/hooks/useListCount";
 import { Sheet } from "@/components/ui/Sheet";
 import { ChipTabs, PageHeader, SearchInput, Toolbar } from "@/components/ui/Page";
 import { Badge } from "@/components/Badge";
@@ -63,6 +68,12 @@ export const PassengersView: React.FC<PassengersViewProps> = ({ selectedCityId }
   const list = useCursorList<ApiUserRow>("/admin/users", { q: q || undefined, ...statusFilterQuery(statusFilter) }, { limit: 25 });
   useOnInvalidate("users", list.refetch);
   const riders = list.items.map(toRider);
+
+  // Summary cards (one page of ids each, "100+" when there are more)
+  const totalCount = useListCount("/admin/users", {}, "users");
+  const activeCount = useListCount("/admin/users", { status: "ACTIVE" }, "users");
+  const flaggedCount = useListCount("/admin/users", { flagged: true }, "users");
+  const suspendedCount = useListCount("/admin/users", { status: "SUSPENDED" }, "users");
 
   const closeDialog = () => setDialog(null);
 
@@ -127,10 +138,17 @@ export const PassengersView: React.FC<PassengersViewProps> = ({ selectedCityId }
         description="Manage passenger accounts, wallet credits, safety contacts, and status suspensions"
         actions={
           selectedCityId !== null ? (
-            <p className="max-w-xs text-[11px] text-slate-600 dark:text-slate-300 sm:text-right">Passenger accounts are not tied to a city, so the city selector does not filter this list.</p>
+            <p className="max-w-xs text-xs text-slate-600 dark:text-slate-300 sm:text-right">Passenger accounts are not tied to a city, so the city selector does not filter this list.</p>
           ) : undefined
         }
       />
+
+      <StatGrid cols={4}>
+        <StatCard label="Total passengers" icon={Users} tone="brand" loading={totalCount.loading} value={countLabel(totalCount)} hint="All accounts" />
+        <StatCard label="Active" icon={UserCheck} tone="good" loading={activeCount.loading} value={countLabel(activeCount)} hint="Can book rides" />
+        <StatCard label="Flagged for review" icon={Flag} tone={flaggedCount.count ? "warn" : "neutral"} loading={flaggedCount.loading} value={countLabel(flaggedCount)} hint="Marked by support or safety" />
+        <StatCard label="Suspended" icon={Ban} tone={suspendedCount.count ? "bad" : "neutral"} loading={suspendedCount.loading} value={countLabel(suspendedCount)} hint="Sessions revoked" />
+      </StatGrid>
 
       {/* Filter and Search Bar */}
       <Toolbar className="lg:flex lg:items-center lg:justify-between lg:space-y-0">
@@ -150,11 +168,11 @@ export const PassengersView: React.FC<PassengersViewProps> = ({ selectedCityId }
           <div className="data-table-container sticky-first">
             <table className="w-full min-w-[53rem] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                   <th className="py-3.5 px-4">Passenger</th>
                   <th className="py-3.5 px-4">Contact Info</th>
                   <th className="py-3.5 px-4">Rating & Trips</th>
-                  <th className="py-3.5 px-4 text-right">Lifetime Spend</th>
+                  <th className="num py-3.5 px-4">Lifetime Spend</th>
                   <th className="py-3.5 px-4">Joined</th>
                   <th className="py-3.5 px-4">Status</th>
                   <th className="py-3.5 px-4 text-center">Interventions</th>
@@ -163,35 +181,28 @@ export const PassengersView: React.FC<PassengersViewProps> = ({ selectedCityId }
               <tbody className="divide-y divide-slate-100 dark:divide-[#331A3B]">
                 {riders.map((rider) => (
                   <tr key={rider.id} className="hover:bg-slate-50/70 dark:hover:bg-[#28162E]/30 transition-colors">
-                    <td className="py-3 px-4">
-                      <button type="button" onClick={() => setOpenRiderId(rider.id)} className="flex items-center gap-2.5 text-left" title="Open passenger profile">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={rider.avatar} alt={rider.name} className="h-8 w-8 rounded-full object-cover border border-[#7A2B66]" />
-                        <div>
-                          <p className="max-w-[14rem] truncate font-bold text-slate-900 dark:text-white">{rider.name}</p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">ID: {rider.id.slice(0, 8)}</p>
-                        </div>
+                    <td className="px-4 py-2.5">
+                      <button type="button" onClick={() => setOpenRiderId(rider.id)} className="text-left" title="Open passenger profile">
+                        <PersonCell name={rider.name} avatar={rider.avatar} subtitle={<span className="font-mono">ID {rider.id.slice(0, 8)}</span>} />
                       </button>
                     </td>
 
-                    <td className="py-3 px-4">
-                      <p className="font-semibold text-slate-800 dark:text-slate-200">{rider.phone}</p>
-                      <p className="max-w-[16rem] truncate text-[10px] text-slate-600 dark:text-slate-300" title={rider.email || undefined}>{rider.email || "No email on file"}</p>
+                    <td className="px-3 py-2.5">
+                      <p className="font-semibold text-slate-900 dark:text-white">{rider.phone}</p>
+                      <p className="max-w-[16rem] truncate text-xs text-slate-600 dark:text-slate-300" title={rider.email || undefined}>{rider.email || "No email on file"}</p>
                     </td>
 
-                    <td className="py-3 px-4">
-                      <span className="font-bold text-amber-700 dark:text-amber-400">★ {rider.rating.toFixed(2)}</span>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{rider.totalRides} Completed Rides</p>
+                    <td className="px-3 py-2.5">
+                      <span className="font-bold tabular-nums text-amber-700 dark:text-amber-400">★ {rider.rating.toFixed(2)}</span>
+                      <p className="text-xs tabular-nums text-slate-600 dark:text-slate-300">{rider.totalRides} completed rides</p>
                     </td>
 
-                    <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">${rider.lifetimeSpend.toFixed(2)}</td>
+                    <td className="num px-3 py-2.5 font-bold text-slate-900 dark:text-white"><Money minor={majorToMinor(rider.lifetimeSpend)} /></td>
 
-                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{formatDate(rider.joinedAt)}</td>
+                    <td className="px-3 py-2.5 tabular-nums text-slate-700 dark:text-slate-200">{formatDate(rider.joinedAt)}</td>
 
-                    <td className="py-3 px-4">
-                      <Badge variant={statusVariant(rider)} size="sm" dot>
-                        {statusLabel(rider)}
-                      </Badge>
+                    <td className="px-3 py-2.5">
+                      <StatusPill variant={statusVariant(rider)}>{statusLabel(rider)}</StatusPill>
                     </td>
 
                     <td className="py-3 px-4 text-center">
@@ -269,7 +280,7 @@ export const PassengersView: React.FC<PassengersViewProps> = ({ selectedCityId }
                 }}
                 className="w-full rounded-xl border border-slate-300 dark:border-[#331A3B] p-2.5 text-sm dark:bg-[#211226] dark:text-white"
               />
-              {!creditValid && <p className="text-[11px] text-[#D93320] dark:text-[#FF7361]">Enter an amount between $0.01 and ${MAX_CREDIT}.</p>}
+              {!creditValid && <p className="text-xs text-[#D93320] dark:text-[#FF7361]">Enter an amount between $0.01 and ${MAX_CREDIT}.</p>}
             </div>
           )}
         </ConfirmDialog>
@@ -372,9 +383,9 @@ const RiderDetailPanel: React.FC<RiderDetailPanelProps> = ({ riderId, onClose, o
               <p className="flex items-center gap-2">
                 <Star className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" /> Last active {rider.lastActiveAt ? timeAgo(rider.lastActiveAt, now) : "never"}
               </p>
-              {!rider.profileComplete && <p className="text-[11px] text-amber-700 dark:text-amber-400">Profile not completed.</p>}
+              {!rider.profileComplete && <p className="text-xs text-amber-700 dark:text-amber-400">Profile not completed.</p>}
               {rider.deletionRequest && (
-                <p className="text-[11px] text-[#D93320] dark:text-[#FF7361]">
+                <p className="text-xs text-[#D93320] dark:text-[#FF7361]">
                   Deletion {humanize(rider.deletionRequest.status)}
                   {rider.deletionRequest.scheduledFor ? ` (scheduled ${formatDate(rider.deletionRequest.scheduledFor)})` : ""}
                   {rider.deletionRequest.blockedReason ? `: ${rider.deletionRequest.blockedReason}` : ""}
@@ -383,7 +394,7 @@ const RiderDetailPanel: React.FC<RiderDetailPanelProps> = ({ riderId, onClose, o
             </div>
 
             <section className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Emergency Contacts</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Emergency Contacts</h4>
               {rider.emergencyContacts.length === 0 ? (
                 <p className="text-xs text-slate-500 dark:text-slate-400">None on file.</p>
               ) : (
@@ -399,7 +410,7 @@ const RiderDetailPanel: React.FC<RiderDetailPanelProps> = ({ riderId, onClose, o
             </section>
 
             <section className="space-y-2">
-              <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Saved Places</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Saved Places</h4>
               {rider.savedPlaces.length === 0 ? (
                 <p className="text-xs text-slate-500 dark:text-slate-400">None saved.</p>
               ) : (
@@ -449,11 +460,11 @@ const RiderDetailPanel: React.FC<RiderDetailPanelProps> = ({ riderId, onClose, o
 
 const Stat: React.FC<{ label: string; value: string; sub?: string; icon?: React.ReactNode }> = ({ label, value, sub, icon }) => (
   <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226]/40 p-3">
-    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">{label}</span>
+    <span className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">{label}</span>
     <p className="mt-0.5 flex items-center gap-1.5 font-mono text-sm font-black text-slate-900 dark:text-white">
       {icon}
       {value}
     </p>
-    {sub && <p className="text-[10px] text-slate-500 dark:text-slate-400">{sub}</p>}
+    {sub && <p className="text-xs text-slate-500 dark:text-slate-400">{sub}</p>}
   </div>
 );

@@ -34,7 +34,7 @@ export const NumField: React.FC<NumFieldProps> = ({ label, hint, value, onChange
       onChange={(e) => onChange(e.target.value)}
       className={`${INPUT} ${tone}`}
     />
-    {hint && <span className="text-[10px] text-slate-500 dark:text-slate-400">{hint}</span>}
+    {hint && <span className="text-xs text-slate-500 dark:text-slate-400">{hint}</span>}
   </div>
 );
 

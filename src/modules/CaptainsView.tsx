@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Car, Heart, Eye } from "lucide-react";
+import { Car, Heart, Eye, ShieldCheck, Users, Hourglass, UserRoundX } from "lucide-react";
 import { ChipTabs, PageHeader, SearchInput, Toolbar } from "@/components/ui/Page";
 import { Badge } from "@/components/Badge";
 import { Can } from "@/components/Can";
@@ -9,6 +9,11 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { EmptyState, LoadMore } from "@/components/ui/EmptyState";
 import { CardsSkeleton } from "@/components/ui/Skeleton";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { useListCount } from "@/lib/hooks/useListCount";
+import { useOpsSnapshot } from "@/lib/rides/useLiveMap";
+import { formatNumber } from "@/lib/format";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
 import {
@@ -29,7 +34,7 @@ import type { QueryParams } from "@/lib/api";
 
 interface CaptainsViewProps {
   selectedCityId: string | null;
-  onOpenKYCViewer: (captainId: string) => void;
+  onOpenCaptain: (captainId: string) => void;
   onNavigateToSecondChance: () => void;
 }
 
@@ -50,7 +55,7 @@ interface SuspendTarget {
   mode: "suspend" | "reactivate";
 }
 
-export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOpenKYCViewer, onNavigateToSecondChance }) => {
+export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOpenCaptain, onNavigateToSecondChance }) => {
   const toast = useToast();
   const { can } = useAuth();
   const { cities } = useCities();
@@ -75,6 +80,16 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
   const sc = useQuery<ApiScStats>(canSc ? "captains-sc-stats" : null, (signal) => api.get<ApiScStats>("/admin/second-chance/stats", { signal }));
   useOnInvalidate("second-chance", sc.refetch);
   const enrolled = sc.data?.byStatus.APPROVED;
+
+  // Fleet headcounts (summary cards)
+  const base = useMemo<QueryParams>(() => ({ cityId: selectedCityId ?? undefined }), [selectedCityId]);
+  const approvedCount = useListCount("/admin/captains", { ...base, status: "APPROVED" }, "captains");
+  const submittedCount = useListCount("/admin/captains", { ...base, status: "SUBMITTED" }, "captains");
+  const reviewCount = useListCount("/admin/captains", { ...base, status: "UNDER_REVIEW" }, "captains");
+  const suspendedCount = useListCount("/admin/captains", { ...base, status: "SUSPENDED" }, "captains");
+  const canOps = can("dashboard.view") || can("rides.view");
+  const snapshot = useOpsSnapshot(selectedCityId, canOps);
+  const pending = submittedCount.count === null || reviewCount.count === null ? null : submittedCount.count + reviewCount.count;
 
   const closeDialog = () => {
     setTarget(null);
@@ -117,6 +132,13 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
         }
       />
 
+      <StatGrid cols={4}>
+        <StatCard label="Online now" icon={Users} tone="good" loading={!snapshot && canOps} value={snapshot ? formatNumber(snapshot.onlineCaptains) : "—"} hint="Available or on a trip" />
+        <StatCard label="Approved captains" icon={ShieldCheck} tone="brand" loading={approvedCount.loading} value={approvedCount.count === null ? "—" : `${approvedCount.count}${approvedCount.more ? "+" : ""}`} hint="Cleared to drive" />
+        <StatCard label="Pending review" icon={Hourglass} tone={pending ? "warn" : "neutral"} loading={submittedCount.loading || reviewCount.loading} value={pending === null ? "—" : String(pending)} hint="Submitted or under review" />
+        <StatCard label="Suspended" icon={UserRoundX} tone={suspendedCount.count ? "bad" : "neutral"} loading={suspendedCount.loading} value={suspendedCount.count === null ? "—" : String(suspendedCount.count)} hint="Blocked from dispatch" />
+      </StatGrid>
+
       {/* Filter and Search Bar */}
       <Toolbar className="lg:flex lg:items-center lg:justify-between lg:space-y-0">
         <ChipTabs label="Captain status" items={FILTERS.map((f) => ({ id: f.key, label: f.label }))} value={filterKey} onChange={setFilterKey} />
@@ -149,7 +171,7 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                       <img src={cap.avatar} alt="" className="h-12 w-12 shrink-0 rounded-full border-2 border-[#7A2B66] object-cover" />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <h3 className="truncate text-sm font-bold text-slate-900 dark:text-white" title={cap.name}>{cap.name}</h3>
+                          <h3 className="truncate text-base font-bold text-slate-900 dark:text-white" title={cap.name}>{cap.name}</h3>
                           {cap.isSecondChance && (
                             <span title="Second Chance driver">
                               <Heart className="h-3.5 w-3.5 text-[#D93320] dark:text-[#FF7361] fill-current" />
@@ -159,15 +181,13 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                         <p className="truncate text-xs text-slate-600 dark:text-slate-300">
                           {cap.phone} • {cityLabel(cap.cityId, cap.cityText, cities)}
                         </p>
-                        <span className="text-[11px] text-amber-700 dark:text-amber-400 font-bold">
+                        <span className="text-xs text-amber-700 dark:text-amber-400 font-bold">
                           ★ {cap.ratingCount > 0 ? cap.rating.toFixed(2) : "New"} ({cap.totalTrips} trips)
                         </span>
                       </div>
                     </div>
 
-                    <Badge variant={captainStatusVariant(cap.status)} size="sm" dot className="shrink-0">
-                      {captainStatusLabel(cap.status)}
-                    </Badge>
+                    <StatusPill variant={captainStatusVariant(cap.status)}>{captainStatusLabel(cap.status)}</StatusPill>
                   </div>
 
                   {/* Vehicle Pill */}
@@ -179,7 +199,7 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                           <p className="truncate font-semibold text-slate-800 dark:text-white">
                             {cap.vehicle.make} {cap.vehicle.model}
                           </p>
-                          <p className="truncate font-mono text-[10px] text-slate-600 dark:text-slate-300">
+                          <p className="truncate font-mono text-xs text-slate-600 dark:text-slate-300">
                             {cap.vehicle.plateNumber} • {cap.vehicle.color}
                           </p>
                         </div>
@@ -197,15 +217,15 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                   {/* Metric Strip */}
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
                     <div className="p-2 rounded-lg bg-[#FAF0F7]/50 dark:bg-[#331A3B]/30">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Acceptance</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Acceptance</span>
                       <p className="font-mono font-bold text-[#7A2B66] dark:text-[#DB99CC]">{cap.acceptanceRate}%</p>
                     </div>
                     <div className="p-2 rounded-lg bg-[#FAF0F7]/50 dark:bg-[#331A3B]/30">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Cancellation</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Cancellation</span>
                       <p className="font-mono font-bold text-slate-700 dark:text-slate-300">{cap.cancellationRate}%</p>
                     </div>
                     <div className="p-2 rounded-lg bg-[#FAF0F7]/50 dark:bg-[#331A3B]/30">
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Trips</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">Trips</span>
                       <p className="font-mono font-bold text-[#14755F] dark:text-[#4FD2B2]">{cap.totalTrips}</p>
                     </div>
                   </div>
@@ -214,7 +234,7 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                 {/* Bottom Actions */}
                 <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-[#331A3B]">
                   <button
-                    onClick={() => onOpenKYCViewer(cap.id)}
+                    onClick={() => onOpenCaptain(cap.id)}
                     className="flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#331A3B] dark:text-slate-200 dark:hover:bg-[#28162E]"
                   >
                     <Eye className="h-3.5 w-3.5" />
@@ -278,7 +298,7 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                 onChange={(e) => setUntil(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] p-2 text-sm text-slate-900 dark:text-white"
               />
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Leave empty for an open-ended suspension.</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Leave empty for an open-ended suspension.</p>
             </div>
           )}
         </ConfirmDialog>

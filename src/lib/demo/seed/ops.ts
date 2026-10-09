@@ -25,7 +25,7 @@ interface Poi {
   lng: number;
 }
 
-const POIS: Poi[][] = [
+export const POIS: Poi[][] = [
   [
     { name: "Texas State Capitol", address: "1100 Congress Ave, Austin, TX 78701", lat: 30.2747, lng: -97.7404 },
     { name: "Austin-Bergstrom International Airport (AUS)", address: "3600 Presidential Blvd, Austin, TX 78719", lat: 30.1975, lng: -97.6664 },

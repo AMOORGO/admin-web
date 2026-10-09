@@ -20,6 +20,9 @@ import { useMutation } from "@/lib/hooks/useMutation";
 import { invalidate, useOnInvalidate } from "@/lib/invalidate";
 import { ApiPermissionGroup, ApiRole, ApiStaff, MODULE_LABELS, StaffMember, toStaffMember } from "@/lib/adapters/iam";
 import { humanize } from "@/lib/format";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { countLabel, useListCount } from "@/lib/hooks/useListCount";
+import { ShieldCheck, UserCheck, MailPlus, UserRoundX } from "lucide-react";
 
 const inputClass =
   "w-full rounded-xl border border-slate-300 dark:border-[#331A3B] p-2.5 text-sm dark:bg-[#211226] dark:text-white focus:outline-none";
@@ -102,6 +105,9 @@ export const StaffRolesView: React.FC = () => {
   };
 
   const roleList = roles.data ?? [];
+  const activeStaff = useListCount("/admin/staff", { status: "ACTIVE" }, "staff");
+  const invitedStaff = useListCount("/admin/staff", { status: "INVITED" }, "staff");
+  const suspendedStaff = useListCount("/admin/staff", { status: "SUSPENDED" }, "staff");
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -121,6 +127,13 @@ export const StaffRolesView: React.FC = () => {
           </Can>
         }
       />
+
+      <StatGrid cols={4}>
+        <StatCard label="Active staff" icon={UserCheck} tone="good" loading={activeStaff.loading} value={countLabel(activeStaff)} hint="Can sign in" />
+        <StatCard label="Invited" icon={MailPlus} tone="info" loading={invitedStaff.loading} value={countLabel(invitedStaff)} hint="Waiting to accept" />
+        <StatCard label="Suspended" icon={UserRoundX} tone={suspendedStaff.count ? "bad" : "neutral"} loading={suspendedStaff.loading} value={countLabel(suspendedStaff)} hint="Access revoked" />
+        <StatCard label="Roles" icon={ShieldCheck} tone="brand" loading={roles.initialLoading} value={roles.data ? String(roleList.length) : "—"} hint={roles.data ? `${roleList.filter((r) => r.isSystem).length} system, ${roleList.filter((r) => !r.isSystem).length} custom` : undefined} />
+      </StatGrid>
 
       {/* Tabs */}
       <SectionTabs
@@ -152,7 +165,7 @@ export const StaffRolesView: React.FC = () => {
               <div className="data-table-container sticky-first">
                 <table className="w-full min-w-[53rem] text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                       <th className="py-3 px-4">Staff Member</th>
                       <th className="py-3 px-4">Role</th>
                       <th className="py-3 px-4">Regional Scope</th>
@@ -174,9 +187,9 @@ export const StaffRolesView: React.FC = () => {
                               <div className="min-w-0">
                                 <p className="font-bold text-slate-900 dark:text-white">
                                   {st.name}
-                                  {isSelf && <span className="ml-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">(you)</span>}
+                                  {isSelf && <span className="ml-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">(you)</span>}
                                 </p>
-                                <p className="max-w-[16rem] truncate text-[10px] text-slate-600 dark:text-slate-300" title={st.email}>{st.email}</p>
+                                <p className="max-w-[16rem] truncate text-xs text-slate-600 dark:text-slate-300" title={st.email}>{st.email}</p>
                               </div>
                             </div>
                           </td>
@@ -217,7 +230,7 @@ export const StaffRolesView: React.FC = () => {
                             )}
                           </td>
 
-                          <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">{st.lastLogin}</td>
+                          <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{st.lastLogin}</td>
 
                           <td className="py-3 px-4">
                             <Badge variant={st.status === "ACTIVE" ? "teal" : st.status === "INVITED" ? "warning" : "coral"} size="sm">
@@ -514,9 +527,9 @@ const InviteModal: React.FC<{
         </div>
         <div>
           <span className={labelClass}>City Scope Restriction</span>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1.5">Leave all unchecked for global access.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">Leave all unchecked for global access.</p>
           {cities.length === 0 ? (
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">No cities available.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">No cities available.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {cities.map((c) => (
@@ -571,7 +584,7 @@ const EditRolesModal: React.FC<{ member: StaffMember; roles: ApiRole[]; onClose:
             />
             <span>
               <span className="font-bold text-slate-800 dark:text-slate-100">{r.name}</span>
-              {r.description && <span className="block text-[11px] text-slate-500 dark:text-slate-400">{r.description}</span>}
+              {r.description && <span className="block text-xs text-slate-500 dark:text-slate-400">{r.description}</span>}
             </span>
           </label>
         ))}
@@ -615,7 +628,7 @@ const RoleMatrix: React.FC<{
               <Lock className="h-3 w-3" /> requires mandatory 2FA
             </span>
             {canManageRoles && (
-              <button onClick={onCreate} className="flex items-center gap-1 rounded-lg bg-[#3A102F] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#521A44] dark:bg-[#7A2B66]">
+              <button onClick={onCreate} className="flex items-center gap-1 rounded-lg bg-[#3A102F] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#521A44] dark:bg-[#7A2B66]">
                 <Plus className="h-3 w-3" /> New custom role
               </button>
             )}
@@ -628,7 +641,7 @@ const RoleMatrix: React.FC<{
           <div className="data-table-container sticky-first">
             <table className="w-full min-w-[44rem] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                   <th className="py-3 px-4 w-72">Permission Key</th>
                   {roles.map((r) => (
                     <th key={r.id} className="py-3 px-4 text-center whitespace-nowrap">
@@ -654,7 +667,7 @@ const RoleMatrix: React.FC<{
                     <td className="py-3 px-4">
                       <span className="font-bold text-slate-900 dark:text-white">{p.description}</span>
                       {p.sensitive && <Lock className="ml-1.5 inline h-3 w-3 text-amber-700 dark:text-amber-400" aria-label="Sensitive: mandatory 2FA" />}
-                      <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
+                      <p className="font-mono text-xs text-slate-500 dark:text-slate-400">
                         {MODULE_LABELS[p.module] ?? humanize(p.module)} · {p.key}
                       </p>
                     </td>
@@ -730,7 +743,7 @@ const RoleEditorModal: React.FC<{
         <div className="space-y-3 max-h-64 overflow-y-auto rounded-xl border border-slate-200 dark:border-[#331A3B] p-3">
           {catalogue.map((g) => (
             <div key={g.module}>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{MODULE_LABELS[g.module] ?? humanize(g.module)}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{MODULE_LABELS[g.module] ?? humanize(g.module)}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                 {g.permissions.map((p) => {
                   const ok = grantable(p);
@@ -745,7 +758,7 @@ const RoleEditorModal: React.FC<{
                       />
                       <span>
                         <span className="font-semibold text-slate-800 dark:text-slate-100">{p.description}</span>
-                        <span className="block font-mono text-[10px] text-slate-500 dark:text-slate-400">{p.key}</span>
+                        <span className="block font-mono text-xs text-slate-500 dark:text-slate-400">{p.key}</span>
                       </span>
                     </label>
                   );

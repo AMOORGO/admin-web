@@ -27,6 +27,7 @@ const TABLE: Entry[] = [
   // captains & KYC
   ["GET /admin/captains", "captains.view"],
   ["GET /admin/captains/:id", "captains.view"],
+  ["GET /admin/captains/:id/earnings/overview", "finance.view"],
   ["POST /admin/captains/:id/approve", "captains.approve"],
   ["POST /admin/captains/:id/reject", "captains.approve"],
   ["POST /admin/captains/:id/request-resubmission", "captains.approve"],

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import { Download, Layers, RefreshCw, ShieldCheck, AlertTriangle, Landmark } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Download, Layers, RefreshCw, ShieldCheck, AlertTriangle, Landmark, Receipt, TrendingUp, Wallet } from "lucide-react";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { clearNavIntent, peekNavIntent } from "@/lib/navIntent";
 import { FilterRow, PageHeader, SearchInput, SectionTabs, fieldClass } from "@/components/ui/Page";
 import { Badge, BadgeVariant } from "@/components/Badge";
 import { Can } from "@/components/Can";
@@ -53,7 +55,7 @@ type FinanceTab = "TRANSACTIONS" | "PAYOUTS" | "REFUNDS" | "RECONCILIATION";
 
 const CARD = "rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] shadow-xs";
 const TH = "py-3 px-4";
-const THEAD = "border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]";
+const THEAD = "border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs";
 const SELECT = `${fieldClass} cursor-pointer bg-white font-semibold text-slate-700 dark:bg-[#180D1C] dark:text-slate-200`;
 
 const txStatusVariant = (s: ApiTransactionStatus): BadgeVariant => (s === "SUCCESS" ? "teal" : s === "PENDING" ? "warning" : "coral");
@@ -67,7 +69,11 @@ const money = (minor: number, currency = "USD") => formatMoney(minor, currency);
 
 export const FinanceView: React.FC<FinanceViewProps> = ({ selectedCityId }) => {
   const toast = useToast();
-  const [activeTab, setActiveTab] = useState<FinanceTab>("TRANSACTIONS");
+  const [activeTab, setActiveTab] = useState<FinanceTab>(() => {
+    const hint = peekNavIntent("finance");
+    return hint === "TRANSACTIONS" || hint === "PAYOUTS" || hint === "REFUNDS" || hint === "RECONCILIATION" ? hint : "TRANSACTIONS";
+  });
+  useEffect(() => clearNavIntent(), []);
   const [rangeDays, setRangeDays] = useState(30);
   const [exporting, setExporting] = useState<string | null>(null);
 
@@ -138,36 +144,21 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ selectedCityId }) => {
 
       {/* Financial Health Strip */}
       {summary.error && !summary.data && <ErrorBanner error={summary.error} title="Could not load the finance summary" onRetry={summary.refetch} />}
-      {summary.initialLoading ? (
-        <CardsSkeleton count={4} />
-      ) : (
-        kpis && (
-          <div className="grid grid-cols-1 gap-3 min-[560px]:grid-cols-2 sm:gap-4 xl:grid-cols-4">
-            <div className={`${CARD} min-w-0 space-y-1 p-4`}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Gross Bookings (GMV)</span>
-              <p className="truncate text-xl font-black sm:text-2xl text-slate-900 dark:text-white">{money(kpis.gmvMinor)}</p>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Settled fares & fees, last {rangeDays} days</span>
-            </div>
-            <div className={`${CARD} min-w-0 space-y-1 p-4`}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Platform Net Take</span>
-              <p className="truncate text-xl font-black sm:text-2xl text-[#7A2B66] dark:text-[#DB99CC]">{money(kpis.platformNetMinor)}</p>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Ledger revenue balance {money(kpis.platformRevenueBalanceMinor)}</span>
-            </div>
-            <div className={`${CARD} min-w-0 space-y-1 p-4`}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Captain Payouts In Flight</span>
-              <p className="truncate text-xl font-black sm:text-2xl text-[#14755F] dark:text-[#4FD2B2]">{money(kpis.openPayoutMinor)}</p>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{kpis.openPayoutCount} pending / processing payouts</span>
-            </div>
-            <div className={`${CARD} min-w-0 space-y-1 p-4`}>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Refund Disputes</span>
-              <p className="truncate text-xl font-black sm:text-2xl text-[#D93320] dark:text-[#FF7361]">
-                {pendingRefunds.data ? `${pendingRefunds.data.count}${pendingRefunds.data.more ? "+" : ""}` : "—"} Pending
-              </p>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Refunded {money(kpis.refundedMinor)} in period</span>
-            </div>
-          </div>
-        )
-      )}
+      <StatGrid cols={4}>
+        <StatCard label={`Gross bookings (GMV), ${rangeDays} days`} icon={Wallet} tone="brand" size="lg" loading={summary.initialLoading} value={kpis ? money(kpis.gmvMinor) : "—"} hint="Settled fares, fees and tips" />
+        <StatCard label="Platform revenue (net take)" icon={TrendingUp} tone="good" size="lg" loading={summary.initialLoading} value={kpis ? money(kpis.platformNetMinor) : "—"} hint={kpis ? `Ledger balance ${money(kpis.platformRevenueBalanceMinor)}` : undefined} />
+        <StatCard label="Payouts in flight" icon={Landmark} tone="info" size="lg" loading={summary.initialLoading} value={kpis ? money(kpis.openPayoutMinor) : "—"} hint={kpis ? `${kpis.openPayoutCount} pending or processing` : undefined} />
+        <StatCard
+          label="Refunds pending"
+          icon={Receipt}
+          tone={pendingRefunds.data && pendingRefunds.data.count > 0 ? "bad" : "good"}
+          size="lg"
+          loading={summary.initialLoading}
+          value={pendingRefunds.data ? `${pendingRefunds.data.count}${pendingRefunds.data.more ? "+" : ""}` : "—"}
+          hint={kpis ? `Refunded ${money(kpis.refundedMinor)} in period` : undefined}
+          onClick={() => setActiveTab("REFUNDS")}
+        />
+      </StatGrid>
 
       {/* Navigation Tabs */}
       <SectionTabs
@@ -183,7 +174,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ selectedCityId }) => {
               <>
                 Refund Requests
                 {pendingRefunds.data && pendingRefunds.data.count > 0 && (
-                  <span className="ml-2 rounded-full bg-[#D93320] px-1.5 py-0.5 text-[10px] text-white">
+                  <span className="ml-2 rounded-full bg-[#D93320] px-1.5 py-0.5 text-xs text-white">
                     {pendingRefunds.data.count}
                     {pendingRefunds.data.more ? "+" : ""}
                   </span>
@@ -196,7 +187,7 @@ export const FinanceView: React.FC<FinanceViewProps> = ({ selectedCityId }) => {
       />
 
       {selectedCityId && activeTab !== "TRANSACTIONS" && activeTab !== "PAYOUTS" && (
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">The city filter applies to transactions and payout batches; this tab is platform-wide.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">The city filter applies to transactions and payout batches; this tab is platform-wide.</p>
       )}
 
       {activeTab === "TRANSACTIONS" && <TransactionsTab selectedCityId={selectedCityId} />}
@@ -311,7 +302,7 @@ const TransactionsTab: React.FC<{ selectedCityId: string | null }> = ({ selected
                     <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">{humanize(tx.type)}</td>
                     <td className="py-3 px-4">
                       <span className="font-semibold text-slate-900 dark:text-white">{tx.customerName}</span>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">to {tx.captainName}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">to {tx.captainName}</p>
                     </td>
                     <td className={`py-3 px-4 text-right font-mono font-bold ${isOutflow(tx.type) ? "text-rose-600" : "text-slate-900 dark:text-white"}`}>
                       {isOutflow(tx.type) ? "-" : ""}
@@ -323,7 +314,7 @@ const TransactionsTab: React.FC<{ selectedCityId: string | null }> = ({ selected
                         {tx.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">{formatDateTime(tx.createdAt)}</td>
+                    <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{formatDateTime(tx.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -422,28 +413,28 @@ const PayoutsTab: React.FC<{ selectedCityId: string | null }> = ({ selectedCityI
 
                 <div className="grid grid-cols-3 gap-2 text-xs text-center">
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#211226]">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Captains</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">Captains</span>
                     <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{batch.totalCaptains}</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#211226]">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Gross Payable</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">Gross Payable</span>
                     <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{money(batch.grossMinor, batch.currency)}</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-[#EFFCF9] dark:bg-[#0D2620]">
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Net Settlement</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 uppercase">Net Settlement</span>
                     <p className="font-mono font-bold text-[#14755F] dark:text-[#82E5CB] mt-0.5">{money(batch.netMinor, batch.currency)}</p>
                   </div>
                 </div>
                 {batch.commissionOffsetMinor > 0 && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Cash commission netted: {money(batch.commissionOffsetMinor, batch.currency)}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Cash commission netted: {money(batch.commissionOffsetMinor, batch.currency)}</p>
                 )}
 
                 <div className="pt-2 border-t border-slate-100 dark:border-[#331A3B] flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">Generated: {formatDateTime(batch.generatedAt)}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">Generated: {formatDateTime(batch.generatedAt)}</span>
                   <button
                     type="button"
                     onClick={() => setBatchFilter(batchFilter === batch.id ? null : batch.id)}
-                    className="rounded-lg bg-[#FAF0F7] dark:bg-[#331A3B] px-3 py-1 text-[11px] font-bold text-[#521A44] dark:text-[#E9BFDF] hover:bg-[#E9BFDF]/50"
+                    className="rounded-lg bg-[#FAF0F7] dark:bg-[#331A3B] px-3 py-1 text-xs font-bold text-[#521A44] dark:text-[#E9BFDF] hover:bg-[#E9BFDF]/50"
                   >
                     {batchFilter === batch.id ? "Show all payouts" : "View payouts"}
                   </button>
@@ -505,9 +496,9 @@ const PayoutsTab: React.FC<{ selectedCityId: string | null }> = ({ selectedCityI
                         <Badge variant={payoutStatusVariant(p.status)} size="sm">
                           {p.status}
                         </Badge>
-                        {p.failureReason && <p className="mt-1 max-w-[220px] text-[10px] text-rose-600 break-words">{p.failureReason}</p>}
+                        {p.failureReason && <p className="mt-1 max-w-[220px] text-xs text-rose-600 break-words">{p.failureReason}</p>}
                       </td>
-                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">{formatDateTime(p.requestedAt)}</td>
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{formatDateTime(p.requestedAt)}</td>
                       <td className="py-3 px-4 text-center">
                         {p.status === "FAILED" ? (
                           <Can permission="finance.payouts">
@@ -649,31 +640,31 @@ const RefundsTab: React.FC = () => {
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-semibold text-slate-900 dark:text-white">{rp?.riderName || "—"}</span>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{rp?.riderPhone ?? ""}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{rp?.riderPhone ?? ""}</p>
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant="plum" size="sm">
                           {humanize(ref.category)}
                         </Badge>
-                        {ref.isAutomatic && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">Automatic</p>}
+                        {ref.isAutomatic && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Automatic</p>}
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-300 max-w-xs">
                         {ref.reason}
-                        {ref.reviewNotes && <p className="mt-1 text-[10px] italic text-slate-500 dark:text-slate-400">Review: {ref.reviewNotes}</p>}
+                        {ref.reviewNotes && <p className="mt-1 text-xs italic text-slate-500 dark:text-slate-400">Review: {ref.reviewNotes}</p>}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-rose-600">
                         {money(ref.amountMinor, ref.currency)}
-                        {ref.toWallet && <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400">to wallet</p>}
+                        {ref.toWallet && <p className="text-xs font-medium text-slate-500 dark:text-slate-400">to wallet</p>}
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge variant={refundStatusVariant(ref.status)} size="sm">
                           {ref.status}
                         </Badge>
-                        {ref.failureReason && <p className="mt-1 max-w-[200px] text-[10px] text-rose-600 break-words">{ref.failureReason}</p>}
+                        {ref.failureReason && <p className="mt-1 max-w-[200px] text-xs text-rose-600 break-words">{ref.failureReason}</p>}
                       </td>
                       <td className="py-3 px-4 text-center">
                         {ref.status === "PENDING" ? (
-                          <Can permission="finance.refund_approve" fallback={<span className="text-slate-500 dark:text-slate-400 text-[11px] italic">Awaiting approver</span>}>
+                          <Can permission="finance.refund_approve" fallback={<span className="text-slate-500 dark:text-slate-400 text-xs italic">Awaiting approver</span>}>
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => setTarget({ refund: ref, mode: "approve" })}
@@ -690,7 +681,7 @@ const RefundsTab: React.FC = () => {
                             </div>
                           </Can>
                         ) : (
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px] italic">{ref.reviewedBy || "Auto-processed"}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-xs italic">{ref.reviewedBy || "Auto-processed"}</span>
                         )}
                       </td>
                     </tr>
@@ -756,7 +747,7 @@ const ReconciliationTab: React.FC<{ summary: ApiFinanceSummary | undefined; rang
             <h2 className="text-base font-bold text-slate-900 dark:text-white">Ledger Reconciliation</h2>
           </div>
           <div className="flex items-center gap-3">
-            {discrepancies.data && <span className="text-[11px] text-slate-500 dark:text-slate-400">Checked {formatDateTime(discrepancies.data.at)}</span>}
+            {discrepancies.data && <span className="text-xs text-slate-500 dark:text-slate-400">Checked {formatDateTime(discrepancies.data.at)}</span>}
             <button
               type="button"
               onClick={discrepancies.refetch}
@@ -782,7 +773,7 @@ const ReconciliationTab: React.FC<{ summary: ApiFinanceSummary | undefined; rang
                 <div className="min-w-0">
                   <p className="font-bold text-slate-900 dark:text-white">{DISCREPANCY_LABELS[d.kind] ?? humanize(d.kind)}</p>
                   <p className="text-slate-500 dark:text-slate-400 break-words">{d.detail}</p>
-                  <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{d.ref}</p>
+                  <p className="font-mono text-xs text-slate-500 dark:text-slate-400">{d.ref}</p>
                 </div>
               </li>
             ))}
@@ -839,7 +830,7 @@ const ReconciliationTab: React.FC<{ summary: ApiFinanceSummary | undefined; rang
       <div className={`${CARD} overflow-hidden`}>
         <div className="px-5 py-3 border-b border-[#F0E3ED] dark:border-[#331A3B]">
           <h2 className="text-sm font-bold text-slate-900 dark:text-white">Payments needing attention</h2>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Failed, stuck processing, awaiting customer action, or disputed</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Failed, stuck processing, awaiting customer action, or disputed</p>
         </div>
         {problems.error && <ErrorBanner error={problems.error} title="Could not load payments" onRetry={problems.refetch} className="m-4" />}
         {problems.initialLoading ? (
@@ -877,7 +868,7 @@ const ReconciliationTab: React.FC<{ summary: ApiFinanceSummary | undefined; rang
                       </Badge>
                     </td>
                     <td className="py-2.5 px-4 text-slate-500 dark:text-slate-400 max-w-[260px] break-words">{p.failureMessage ?? p.failureCode ?? `${p.attemptCount} attempt(s)`}</td>
-                    <td className="py-2.5 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{formatDateTime(p.updatedAt)}</td>
+                    <td className="py-2.5 px-4 font-mono text-xs text-slate-500 dark:text-slate-400">{formatDateTime(p.updatedAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -932,7 +923,7 @@ const ReconciliationTab: React.FC<{ summary: ApiFinanceSummary | undefined; rang
                     className={`cursor-pointer hover:bg-slate-50 dark:hover:bg-[#28162E]/30 ${account?.id === a.id ? "bg-[#FAF0F7]/60 dark:bg-[#211226]" : ""}`}
                   >
                     <td className="py-2.5 px-4 font-semibold text-slate-700 dark:text-slate-300">{humanize(a.type)}</td>
-                    <td className="py-2.5 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{a.ownerId ? shortId(a.ownerId) : "Platform"}</td>
+                    <td className="py-2.5 px-4 font-mono text-xs text-slate-500 dark:text-slate-400">{a.ownerId ? shortId(a.ownerId) : "Platform"}</td>
                     <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">{money(a.balanceMinor, a.currency)}</td>
                   </tr>
                 ))}
@@ -969,7 +960,7 @@ const ReconciliationTab: React.FC<{ summary: ApiFinanceSummary | undefined; rang
               <tbody className="divide-y divide-slate-100 dark:divide-[#331A3B]">
                 {entries.items.map((e) => (
                   <tr key={e.id}>
-                    <td className="py-2.5 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">{formatDateTime(e.at)}</td>
+                    <td className="py-2.5 px-4 font-mono text-xs text-slate-500 dark:text-slate-400">{formatDateTime(e.at)}</td>
                     <td className="py-2.5 px-4 text-slate-700 dark:text-slate-300" title={e.description ?? undefined}>
                       {humanize(e.kind)}
                     </td>

@@ -59,10 +59,13 @@ export interface DashboardAlertView {
 
 export interface DashboardView {
   currency: string;
-  requested: { value: number };
-  completed: { value: number };
+  requested: { value: number; deltaPct: number | null };
+  completed: { value: number; deltaPct: number | null };
   cancelled: { value: number };
   noDriver: { value: number };
+  /** Average fare of completed rides in minor units (GMV / completed); the delta compares with the previous period. */
+  avgFare: { valueMinor: number | null; deltaPct: number | null };
+  cancellationRate: { value: number; deltaPct: number | null };
   /** major units (dollars) */
   gmv: { value: number; deltaPct: number | null };
   revenue: { value: number; deltaPct: number | null };
@@ -89,10 +92,12 @@ export function toDashboard(k: ApiKpis, a: ApiAlerts | null): DashboardView {
   alerts.sort((x, y) => SEVERITY_ORDER[x.severity] - SEVERITY_ORDER[y.severity]);
   return {
     currency: k.currency,
-    requested: { value: k.kpis.ridesRequested.value },
-    completed: { value: k.kpis.ridesCompleted.value },
+    requested: { value: k.kpis.ridesRequested.value, deltaPct: k.kpis.ridesRequested.deltaPct },
+    completed: { value: k.kpis.ridesCompleted.value, deltaPct: k.kpis.ridesCompleted.deltaPct },
     cancelled: { value: k.kpis.ridesCancelled.value },
     noDriver: { value: k.kpis.ridesNoDriver.value },
+    avgFare: avgFare(k),
+    cancellationRate: { value: k.kpis.cancellationRate.value, deltaPct: k.kpis.cancellationRate.deltaPct },
     gmv: { value: k.kpis.gmvMinor.value, deltaPct: k.kpis.gmvMinor.deltaPct },
     revenue: { value: k.kpis.platformRevenueMinor.value, deltaPct: k.kpis.platformRevenueMinor.deltaPct },
     etaMinutes: { value: k.kpis.avgPickupEtaSeconds.value / 60, deltaPct: k.kpis.avgPickupEtaSeconds.deltaPct },
@@ -101,6 +106,29 @@ export function toDashboard(k: ApiKpis, a: ApiAlerts | null): DashboardView {
     alerts,
   };
 }
+
+function avgFare(k: ApiKpis): DashboardView["avgFare"] {
+  const cur = k.kpis.ridesCompleted.value > 0 ? k.kpis.gmvMinor.value / k.kpis.ridesCompleted.value : null;
+  const prev = k.kpis.ridesCompleted.previous > 0 ? k.kpis.gmvMinor.previous / k.kpis.ridesCompleted.previous : null;
+  return { valueMinor: cur === null ? null : Math.round(cur), deltaPct: cur !== null && prev !== null && prev > 0 ? Math.round(((cur - prev) / prev) * 1000) / 10 : null };
+}
+
+/** One day of the revenue trend (a KPI call scoped to a single local day). */
+export interface TrendDay {
+  date: string;
+  gmvMinor: number;
+  revenueMinor: number;
+  completed: number;
+  requested: number;
+}
+
+export const toTrendDay = (date: string, k: ApiKpis): TrendDay => ({
+  date,
+  gmvMinor: k.kpis.gmvMinor.value,
+  revenueMinor: k.kpis.platformRevenueMinor.value,
+  completed: k.kpis.ridesCompleted.value,
+  requested: k.kpis.ridesRequested.value,
+});
 
 export function formatDelta(deltaPct: number | null): string {
   if (deltaPct === null) return "No prior-period data";

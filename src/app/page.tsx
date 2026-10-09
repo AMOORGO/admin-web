@@ -6,7 +6,8 @@ import { AuthGate } from "@/components/auth/AuthGate";
 import { Navbar } from "@/components/Navbar";
 import { Sidebar, AdminTab } from "@/components/Sidebar";
 import { RideDrawer } from "@/components/RideDrawer";
-import { KYCDocumentViewer } from "@/components/KYCDocumentViewer";
+import { CaptainProfile } from "@/components/captain/CaptainProfile";
+import type { CaptainTab } from "@/components/captain/captainUi";
 import { SOSCommandModal } from "@/components/SOSCommandModal";
 import { useAuth } from "@/lib/auth/AuthProvider";
 import { CityProvider, useCities } from "@/lib/cities/CityProvider";
@@ -88,7 +89,8 @@ function ConsoleShell() {
 
   // Drawers & modals are keyed by id: each fetches its own detail from the API.
   const [inspectingRideId, setInspectingRideId] = useState<string | null>(null);
-  const [inspectingKycCaptainId, setInspectingKycCaptainId] = useState<string | null>(null);
+  const [inspectingCaptain, setInspectingCaptain] = useState<{ id: string; tab: CaptainTab } | null>(null);
+  const openCaptain = (id: string, tab: CaptainTab = "overview") => setInspectingCaptain({ id, tab });
   const [inspectingSosIncidentId, setInspectingSosIncidentId] = useState<string | null>(null);
 
   // Fall back to the first tab the staff member may open when the requested one is not permitted.
@@ -149,12 +151,12 @@ function ConsoleShell() {
           {currentTab === "captains" && (
             <CaptainsView
               selectedCityId={selectedCityId}
-              onOpenKYCViewer={setInspectingKycCaptainId}
+              onOpenCaptain={openCaptain}
               onNavigateToSecondChance={() => setCurrentTab("second-chance")}
             />
           )}
 
-          {currentTab === "kyc-queue" && <KYCQueueView selectedCityId={selectedCityId} onOpenKYCViewer={setInspectingKycCaptainId} />}
+          {currentTab === "kyc-queue" && <KYCQueueView selectedCityId={selectedCityId} onOpenCaptain={openCaptain} />}
 
           {currentTab === "second-chance" && <SecondChanceView selectedCityId={selectedCityId} />}
 
@@ -174,7 +176,7 @@ function ConsoleShell() {
 
       {/* Flyouts: each loads its own detail by id and reports changes through lib/invalidate */}
       <RideDrawer rideId={inspectingRideId} onClose={() => setInspectingRideId(null)} />
-      <KYCDocumentViewer captainId={inspectingKycCaptainId} onClose={() => setInspectingKycCaptainId(null)} />
+      <CaptainProfile captainId={inspectingCaptain?.id ?? null} initialTab={inspectingCaptain?.tab} onClose={() => setInspectingCaptain(null)} onOpenRide={setInspectingRideId} />
       <SOSCommandModal incidentId={inspectingSosIncidentId} onClose={() => setInspectingSosIncidentId(null)} />
     </div>
   );

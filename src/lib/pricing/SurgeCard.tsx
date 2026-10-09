@@ -126,7 +126,7 @@ export const SurgeCard: React.FC<SurgeCardProps> = ({ city, serviceTypes }) => {
         <div className="data-table-container sticky-first">
           <table className="w-full min-w-[45rem] text-left border-collapse text-xs">
             <thead>
-              <tr className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-amber-100 dark:border-amber-950/40">
+              <tr className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs border-b border-amber-100 dark:border-amber-950/40">
                 <th className="py-2 px-3">Zone</th>
                 <th className="py-2 px-3">Ride type</th>
                 <th className="py-2 px-3">Multiplier</th>

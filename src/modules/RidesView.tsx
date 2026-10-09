@@ -1,18 +1,26 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Download, Eye, RefreshCw } from "lucide-react";
+import { CheckCircle2, Download, Eye, RefreshCw, Search, XCircle, Zap } from "lucide-react";
 import { ChipTabs, FilterRow, PageHeader, SearchInput, Toolbar, fieldClass } from "@/components/ui/Page";
-import { Badge } from "@/components/Badge";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { EmptyState, LoadMore } from "@/components/ui/EmptyState";
 import { TableSkeleton } from "@/components/ui/Skeleton";
 import { useCities } from "@/lib/cities/CityProvider";
-import { useCursorList } from "@/lib/hooks/useQuery";
+import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth/AuthProvider";
+import { useCursorList, useQuery } from "@/lib/hooks/useQuery";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { StatusPill } from "@/components/ui/StatusPill";
+import { RelativeTime } from "@/components/ui/RelativeTime";
+import { Money } from "@/components/ui/Money";
+import { PersonCell } from "@/components/ui/PersonCell";
+import { clearNavIntent, peekNavIntent } from "@/lib/navIntent";
+import type { ApiKpis } from "@/lib/adapters/dashboard";
 import { useOnInvalidate } from "@/lib/invalidate";
-import { formatDateTime, formatMoney, humanize } from "@/lib/format";
+import { formatNumber, humanize } from "@/lib/format";
 import { useServiceTypes } from "@/lib/rides/useServiceTypes";
-import { useDebouncedCallback, useRideStateFeed } from "@/lib/rides/useLiveMap";
+import { useDebouncedCallback, useOpsSnapshot, useRideStateFeed } from "@/lib/rides/useLiveMap";
 import {
   ALL_API_RIDE_STATUSES,
   STATUS_TABS,
@@ -43,8 +51,13 @@ const inputCls = `${fieldClass} font-semibold text-slate-700 dark:text-slate-200
 
 export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRide }) => {
   const { cityName } = useCities();
+  const { can } = useAuth();
   const serviceTypes = useServiceTypes();
-  const [activeTab, setActiveTab] = useState<string>("ALL");
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const hint = peekNavIntent("rides");
+    return hint && STATUS_TABS.some((t) => t.id === hint) ? hint : "ALL";
+  });
+  useEffect(() => clearNavIntent(), []);
   const [exactStatus, setExactStatus] = useState("ALL");
   const [searchInput, setSearchInput] = useState("");
   const [q, setQ] = useState("");
@@ -89,14 +102,15 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
 
   const rides: RideView[] = useMemo(() => list.items.map((r) => toRide(r, cityName)), [list.items, cityName]);
 
-  const stats = useMemo(
-    () => ({
-      completed: rides.filter((r) => r.status === "COMPLETED").length,
-      active: rides.filter((r) => r.status === "ON_TRIP" || r.status === "ARRIVING" || r.status === "ARRIVED" || r.status === "ACCEPTED").length,
-      cancelled: rides.filter((r) => r.status === "CANCELLED").length,
-    }),
-    [rides],
-  );
+  // Counters above the filters
+  const canOps = can("dashboard.view") || can("rides.view");
+  const snapshot = useOpsSnapshot(selectedCityId, canOps);
+  const kpis = useQuery<ApiKpis>(can("dashboard.view") ? `rides-kpis:${selectedCityId ?? "all"}` : null, (signal) => api.get<ApiKpis>("/admin/dashboard/kpis", { query: { cityId: selectedCityId }, signal }), { pollMs: 30_000 });
+  const snapRides = snapshot?.rides ?? {};
+  const activeNow = Object.values(snapRides).reduce((a, b) => a + b, 0);
+  const searching = (snapRides.REQUESTED ?? 0) + (snapRides.SEARCHING ?? 0);
+  const onTrip = (snapRides.RIDE_STARTED ?? 0) + (snapRides.IN_PROGRESS ?? 0);
+  const arriving = (snapRides.DRIVER_ASSIGNED ?? 0) + (snapRides.DRIVER_EN_ROUTE ?? 0) + (snapRides.DRIVER_ARRIVED ?? 0);
 
   const exportCSV = () => {
     const headers = ["BookingCode", "City", "ServiceType", "Status", "Requested", "Rider", "Captain", "Currency", "EstimatedFare", "FinalFare", "PaymentMethod", "PaymentStatus"];
@@ -126,8 +140,7 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
-  const countLabel = (n: number) => (list.hasMore ? `${n}+` : String(n));
-
+  
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
       <PageHeader
@@ -157,25 +170,20 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
         }
       />
 
-      {/* Top Quick Metrics (computed over the rides currently loaded for the active filters) */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Matching Rides</span>
-          <p className="mt-0.5 text-lg font-black text-slate-900 dark:text-white">{countLabel(rides.length)}</p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Completed Trips</span>
-          <p className="mt-0.5 text-lg font-black text-emerald-700 dark:text-emerald-400">{stats.completed}</p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Active Now</span>
-          <p className="mt-0.5 text-lg font-black text-[#7A2B66] dark:text-[#DB99CC]">{stats.active}</p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Cancellations</span>
-          <p className="mt-0.5 text-lg font-black text-[#D93320] dark:text-[#FF7361]">{stats.cancelled}</p>
-        </div>
-      </div>
+      {/* Operational counters: live from the ops snapshot, today's outcomes from the KPI endpoint */}
+      <StatGrid cols={4}>
+        <StatCard label="Active rides now" icon={Zap} tone="brand" loading={!snapshot && canOps} value={snapshot ? formatNumber(activeNow) : "—"} hint={snapshot ? `${onTrip} on trip • ${arriving} arriving` : undefined} />
+        <StatCard label="Searching for a captain" icon={Search} tone={searching > 0 ? "warn" : "neutral"} loading={!snapshot && canOps} value={snapshot ? formatNumber(searching) : "—"} hint="Requested or matching" />
+        <StatCard label="Completed today" icon={CheckCircle2} tone="good" loading={kpis.initialLoading} value={kpis.data ? formatNumber(kpis.data.kpis.ridesCompleted.value) : "—"} delta={kpis.data ? { pct: kpis.data.kpis.ridesCompleted.deltaPct } : undefined} hint="vs same hours yesterday" />
+        <StatCard
+          label="Cancelled / no driver today"
+          icon={XCircle}
+          tone="bad"
+          loading={kpis.initialLoading}
+          value={kpis.data ? formatNumber(kpis.data.kpis.ridesCancelled.value + kpis.data.kpis.ridesNoDriver.value) : "—"}
+          hint={kpis.data ? `${kpis.data.kpis.ridesCancelled.value} cancelled • ${kpis.data.kpis.ridesNoDriver.value} no driver` : undefined}
+        />
+      </StatGrid>
 
       {/* Filter and Search Bar */}
       <Toolbar>
@@ -232,7 +240,7 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
                 setToDate("");
                 setSosOnly(false);
               }}
-              className="min-h-10 text-left text-[11px] font-bold text-[#7A2B66] hover:underline dark:text-[#DB99CC] lg:ml-auto"
+              className="min-h-10 text-left text-xs font-bold text-[#7A2B66] hover:underline dark:text-[#DB99CC] lg:ml-auto"
             >
               Clear filters
             </button>
@@ -248,18 +256,18 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
           <TableSkeleton rows={8} cols={8} />
         ) : (
           <div className="data-table-container sticky-first">
-            <table className="w-full min-w-[68rem] text-left border-collapse text-xs">
+            <table className="w-full min-w-[72rem] border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                  <th className="py-3.5 px-4">Booking Code</th>
-                  <th className="py-3.5 px-4">City / Service</th>
-                  <th className="py-3.5 px-4">Passenger</th>
-                  <th className="py-3.5 px-4">Assigned Captain</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Requested</th>
-                  <th className="py-3.5 px-4 text-right">Fare</th>
-                  <th className="py-3.5 px-4">Payment</th>
-                  <th className="py-3.5 px-4 text-center">Actions</th>
+                <tr>
+                  <th className="px-4 py-3">Booking</th>
+                  <th className="px-3 py-3">City / service</th>
+                  <th className="px-3 py-3">Passenger</th>
+                  <th className="px-3 py-3">Captain</th>
+                  <th className="px-3 py-3">Status</th>
+                  <th className="px-3 py-3">Requested</th>
+                  <th className="num px-3 py-3">Fare</th>
+                  <th className="px-3 py-3">Payment</th>
+                  <th className="px-4 py-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#331A3B]">
@@ -271,81 +279,48 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
                   </tr>
                 ) : (
                   rides.map((ride) => (
-                    <tr key={ride.id} className="hover:bg-slate-50/70 dark:hover:bg-[#28162E]/30 transition-colors">
-                      {/* Code */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-mono font-bold text-slate-900 dark:text-white">{ride.bookingCode}</span>
-                          {ride.hasSOSAlert && <span className="text-[10px] text-rose-600 dark:text-rose-400 font-black animate-pulse">SOS</span>}
-                        </div>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{ride.id.slice(0, 8)}</span>
-                      </td>
-
-                      {/* City / Service */}
-                      <td className="py-3 px-4">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">{ride.city}</span>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ride.serviceTypeName}</p>
-                      </td>
-
-                      {/* Rider */}
-                      <td className="py-3 px-4">
+                    <tr key={ride.id}>
+                      <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={ride.rider.avatar} alt={ride.rider.name} className="h-6 w-6 rounded-full object-cover" />
-                          <div>
-                            <p className="font-semibold text-slate-800 dark:text-slate-200">{ride.rider.name}</p>
-                            {ride.rider.rating > 0 && <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">★ {ride.rider.rating.toFixed(1)}</p>}
-                          </div>
+                          <span className="font-mono text-sm font-bold text-slate-900 dark:text-white">{ride.bookingCode}</span>
+                          {ride.hasSOSAlert && <StatusPill variant="danger" dot={false}>SOS</StatusPill>}
                         </div>
+                        <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{ride.id.slice(0, 8)}</span>
                       </td>
-
-                      {/* Captain */}
-                      <td className="py-3 px-4">
+                      <td className="px-3 py-2.5">
+                        <span className="font-semibold text-slate-900 dark:text-white">{ride.city}</span>
+                        <p className="text-xs text-slate-600 dark:text-slate-300">{ride.serviceTypeName}</p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <PersonCell name={ride.rider.name} avatar={ride.rider.avatar} subtitle={ride.rider.rating > 0 ? `★ ${ride.rider.rating.toFixed(1)}` : undefined} size="sm" />
+                      </td>
+                      <td className="px-3 py-2.5">
                         {ride.captain ? (
-                          <div className="flex items-center gap-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={ride.captain.avatar} alt={ride.captain.name} className="h-6 w-6 rounded-full object-cover" />
-                            <div>
-                              <p className="font-semibold text-slate-800 dark:text-slate-200">{ride.captain.name}</p>
-                              <p className="text-[10px] font-mono text-[#7A2B66] dark:text-[#DB99CC]">{ride.captain.vehiclePlate}</p>
-                            </div>
-                          </div>
+                          <PersonCell name={ride.captain.name} avatar={ride.captain.avatar} subtitle={<span className="font-mono">{ride.captain.vehiclePlate}</span>} size="sm" />
                         ) : (
-                          <span className="text-slate-500 dark:text-slate-400 italic">{ride.status === "SEARCHING" ? "Matching..." : "None"}</span>
+                          <span className="text-slate-600 dark:text-slate-300">{ride.status === "SEARCHING" ? "Matching…" : "—"}</span>
                         )}
                       </td>
-
-                      {/* Status */}
-                      <td className="py-3 px-4">
-                        <Badge variant={statusVariant(ride.rawStatus)} size="sm" dot>
-                          {statusLabel(ride.rawStatus)}
-                        </Badge>
+                      <td className="px-3 py-2.5">
+                        <StatusPill variant={statusVariant(ride.rawStatus)}>{statusLabel(ride.rawStatus)}</StatusPill>
                       </td>
-
-                      {/* Requested */}
-                      <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateTime(ride.requestedAt)}</td>
-
-                      {/* Fare */}
-                      <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                        {formatMoney(ride.finalFareMinor ?? ride.estimatedFareMinor, ride.currency)}
-                        {ride.finalFareMinor === null && <p className="text-[10px] font-normal text-slate-500 dark:text-slate-400">estimate</p>}
+                      <td className="px-3 py-2.5 text-slate-800 dark:text-slate-100">
+                        <RelativeTime iso={ride.requestedAt} />
                       </td>
-
-                      {/* Payment */}
-                      <td className="py-3 px-4">
-                        <span className="text-slate-600 dark:text-slate-300">{humanize(ride.paymentMethodRaw)}</span>
-                        {ride.paymentStatusRaw && (
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{humanize(ride.paymentStatusRaw)}</p>
-                        )}
+                      <td className="num px-3 py-2.5 font-bold text-slate-900 dark:text-white">
+                        <Money minor={ride.finalFareMinor ?? ride.estimatedFareMinor} currency={ride.currency} />
+                        {ride.finalFareMinor === null && <span className="block text-xs font-normal text-slate-600 dark:text-slate-300">estimate</span>}
                       </td>
-
-                      {/* Action */}
-                      <td className="py-3 px-4 text-center">
+                      <td className="px-3 py-2.5">
+                        <span className="text-slate-800 dark:text-slate-100">{humanize(ride.paymentMethodRaw)}</span>
+                        {ride.paymentStatusRaw && <p className="text-xs text-slate-600 dark:text-slate-300">{humanize(ride.paymentStatusRaw)}</p>}
+                      </td>
+                      <td className="px-4 py-2.5 text-center">
                         <button
                           onClick={() => onSelectRide(ride.id)}
-                          className="rounded-lg bg-[#FAF0F7] dark:bg-[#331A3B] px-3 py-1.5 font-bold text-[#7A2B66] dark:text-[#E9BFDF] hover:bg-[#3A102F] hover:text-white transition-all flex items-center justify-center gap-1 mx-auto"
+                          className="mx-auto inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-[#FAF0F7] px-3 text-[13px] font-bold text-[#7A2B66] transition-all hover:bg-[#3A102F] hover:text-white dark:bg-[#331A3B] dark:text-[#E9BFDF]"
                         >
-                          <Eye className="h-3.5 w-3.5" />
+                          <Eye className="h-4 w-4" aria-hidden="true" />
                           Inspect
                         </button>
                       </td>

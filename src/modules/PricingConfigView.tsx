@@ -10,6 +10,8 @@ import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader, SectionTabs } from "@/components/ui/Page";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { Building2, Layers, Power, Banknote } from "lucide-react";
 import { ConfigPanel } from "@/lib/pricing/ConfigPanel";
 import { FaresPanel } from "@/lib/pricing/FaresPanel";
 import { CityControlsCard, PolicyCard } from "@/lib/pricing/CityCards";
@@ -51,6 +53,13 @@ export const PricingConfigView: React.FC = () => {
         title="Pricing, Dynamic Surge & Geofencing"
         description="Configure city-specific base fares, mileage rates, surge pricing, service boundaries, feature flags and platform settings"
       />
+
+      <StatGrid cols={4}>
+        <StatCard label="Cities" icon={Building2} tone="brand" loading={cities.initialLoading} value={String(cityList.length)} hint={`${cityList.filter((c) => c.isActive).length} active`} />
+        <StatCard label="Accepting rides" icon={Power} tone="good" loading={cities.initialLoading} value={String(cityList.filter((c) => c.ridesEnabled).length)} hint={cityList.some((c) => !c.ridesEnabled) ? `${cityList.filter((c) => !c.ridesEnabled).length} paused` : "All cities live"} />
+        <StatCard label="Service types" icon={Layers} tone="info" loading={serviceTypes.initialLoading} value={String(typeList.length)} hint="Active products" />
+        <StatCard label="Cash enabled" icon={Banknote} tone="warn" loading={cities.initialLoading} value={`${cityList.filter((c) => c.cashEnabled).length} of ${cityList.length}`} hint="Cities taking cash rides" />
+      </StatGrid>
 
       {/* City Picker */}
       {tab !== "CONFIG" && cityList.length > 0 && (

@@ -111,9 +111,9 @@ const PolicyEditor: React.FC<{
         </div>
       </div>
       {inheritsDefault && (
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">No {serviceType.name}-specific policy yet: it currently uses the city default. Saving here creates an override.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">No {serviceType.name}-specific policy yet: it currently uses the city default. Saving here creates an override.</p>
       )}
-      {!baseline && !inheritsDefault && <p className="text-[11px] text-amber-700 dark:text-amber-300">No policy exists for this scope yet. Saving creates it.</p>}
+      {!baseline && !inheritsDefault && <p className="text-xs text-amber-700 dark:text-amber-300">No policy exists for this scope yet. Saving creates it.</p>}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
         <NumField disabled={!canEdit} label="Free Cancel Window (seconds)" value={form.freeCancelSeconds} onChange={set("freeCancelSeconds")} step="10" hint="After a captain is assigned" />
         <NumField disabled={!canEdit} label="Fee After Assignment ($)" value={form.feeAfterAssignment} onChange={set("feeAfterAssignment")} step="0.5" hint="Cancellation fee once the window passed" />
@@ -186,7 +186,7 @@ export const CityControlsCard: React.FC<{ city: ApiCityFull }> = ({ city }) => {
               {city.ridesEnabled ? "ON" : "PAUSED"}
             </Badge>
           </p>
-          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Temporary shutdown switch: new requests are refused with a message; rides already in progress are not touched.
             {!city.ridesEnabled && city.shutdownMessage ? ` Message: "${city.shutdownMessage}"` : ""}
           </p>
@@ -206,7 +206,7 @@ export const CityControlsCard: React.FC<{ city: ApiCityFull }> = ({ city }) => {
             </button>
           </Can>
         </div>
-        <span className="text-[10px] text-slate-500 dark:text-slate-400">Pass-through fee added to trips that start or end in an Airport zone (untaxed, paid to the captain).</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">Pass-through fee added to trips that start or end in an Airport zone (untaxed, paid to the captain).</span>
       </div>
 
       <ConfirmDialog

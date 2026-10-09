@@ -103,7 +103,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
               </Badge>
             )}
             {snapshot && (
-              <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
+              <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
                 {snapshot.onlineCaptains} online captains • {snapshotTotal} live rides
               </span>
             )}
@@ -148,7 +148,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
               <Car className="h-4 w-4 text-[#7A2B66] dark:text-[#DB99CC]" />
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Active Trips ({filteredRides.length})</h3>
             </div>
-            <span className="min-w-0 truncate text-[10px] font-mono text-slate-500 dark:text-slate-400">City: {cityLabel}</span>
+            <span className="min-w-0 truncate text-xs font-mono text-slate-500 dark:text-slate-400">City: {cityLabel}</span>
           </div>
 
           {/* Search & Filter */}
@@ -165,7 +165,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
               />
             </div>
 
-            <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 text-[11px]" role="group" aria-label="Filter by status">
+            <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 text-xs" role="group" aria-label="Filter by status">
               {LIVE_STATUS_TABS.map((st) => (
                 <button
                   key={st.id}
@@ -238,7 +238,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
                     </div>
                   </div>
 
-                  <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between gap-2">
+                  <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate">
                       {ride.pickupAddress.split(",")[0]} → {ride.dropoffAddress.split(",")[0]}
                     </span>

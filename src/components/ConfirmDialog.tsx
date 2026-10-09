@@ -144,7 +144,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               placeholder={reasonPlaceholder}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-900 placeholder-slate-500 focus:border-[#7A2B66] dark:border-[#331A3B] dark:bg-[#211226] dark:text-white"
             />
-            <p className="text-[11px] text-slate-600 dark:text-slate-400">
+            <p className="text-xs text-slate-600 dark:text-slate-400">
               This note will be permanently recorded in the immutable audit log with your staff identity and IP.
             </p>
           </div>

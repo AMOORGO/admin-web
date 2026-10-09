@@ -178,7 +178,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                       <p className="truncate text-xs text-slate-600 dark:text-slate-300">
                         {rec.captain.phone} • {cityLabel(rec.captain.cityId, rec.captain.city, cities)}
                       </p>
-                      <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
+                      <span className="text-xs font-bold text-amber-700 dark:text-amber-400">
                         ★ {rec.captain.totalTrips > 0 ? rec.captain.rating.toFixed(2) : "New"} ({rec.captain.totalTrips} Total Trips)
                       </span>
                     </div>
@@ -213,7 +213,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                       </div>
                     </>
                   )}
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Compliance {rec.complianceScore}% • {rec.incidentCount} incident{rec.incidentCount === 1 ? "" : "s"}
                     {rec.reviewDue ? " • periodic review due" : rec.nextReviewAt ? ` • next review ${displayDate(rec.nextReviewAt)}` : ""}
                   </p>
@@ -222,7 +222,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                 {/* Conditions & Safety Controls Checklist */}
                 <div className="grid grid-cols-1 gap-2 text-xs min-[480px]:grid-cols-3">
                   <div className="p-2.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C]">
-                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase">
                       <Gauge className="h-3.5 w-3.5 text-[#D93320] dark:text-[#FF7361]" />
                       Governor
                     </div>
@@ -230,7 +230,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                   </div>
 
                   <div className="p-2.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C]">
-                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase">
                       <Clock className="h-3.5 w-3.5 text-[#7A2B66]" />
                       Max Shift
                     </div>
@@ -238,7 +238,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                   </div>
 
                   <div className="p-2.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C]">
-                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase">
                       <ShieldCheck className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
                       Mentor Staff
                     </div>
@@ -246,7 +246,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                   </div>
                 </div>
                 {rec.restrictedNightDriving && (
-                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <Moon className="h-3.5 w-3.5" /> Night driving restricted ({night.start} – {night.end})
                   </p>
                 )}
@@ -254,8 +254,8 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                 {/* Admin Notes */}
                 {rec.eligibilityNotes && (
                   <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] p-3 text-xs bg-slate-50/50 dark:bg-[#211226]/40 space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Administrative Review Notes</span>
-                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">{rec.eligibilityNotes}</p>
+                    <span className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Administrative Review Notes</span>
+                    <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-xs">{rec.eligibilityNotes}</p>
                   </div>
                 )}
 
@@ -338,7 +338,7 @@ const StatTile: React.FC<{ label: string; value: string; tone: "coral" | "green"
       tone === "coral" ? "border-[#FFC4BC] dark:border-[#61130A]" : tone === "green" ? "border-emerald-200 dark:border-emerald-900" : "border-slate-200 dark:border-[#331A3B]"
     }`}
   >
-    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{label}</span>
+    <span className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">{label}</span>
     <p className={`truncate text-lg font-black ${tone === "coral" ? "text-[#D93320] dark:text-[#FF7361]" : tone === "green" ? "text-emerald-700 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>{value}</p>
   </div>
 );
@@ -347,7 +347,7 @@ const StatTile: React.FC<{ label: string; value: string; tone: "coral" | "green"
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3">
-    <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">{label}</p>
+    <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">{label}</p>
     <div className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-100 break-words">{children}</div>
   </div>
 );
@@ -471,7 +471,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   <Field label="Allowed vehicles">{r.allowedVehicleIds?.length ? `${r.allowedVehicleIds.length} vehicle(s)` : "Any"}</Field>
                   <Field label="Service types">{r.allowedServiceTypeCodes?.length ? r.allowedServiceTypeCodes.join(", ") : "Any"}</Field>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">Mentor: {d.sponsorMentor || "Operations"}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Mentor: {d.sponsorMentor || "Operations"}</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -492,7 +492,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   )}
                   {d.deactivationExplanation && (
                     <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50/50 dark:bg-[#211226]/40 p-3 text-xs">
-                      <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Captain&apos;s explanation</p>
+                      <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Captain&apos;s explanation</p>
                       <p className="mt-1 text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{d.deactivationExplanation}</p>
                     </div>
                   )}
@@ -514,7 +514,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   )}
                   {d.eligibilityNotes && (
                     <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50/50 dark:bg-[#211226]/40 p-3 text-xs">
-                      <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Administrative review notes</p>
+                      <p className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Administrative review notes</p>
                       <p className="mt-1 text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{d.eligibilityNotes}</p>
                     </div>
                   )}
@@ -550,7 +550,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   d.recentNotes.map((n) => (
                     <div key={n.id} className="rounded-xl border border-slate-200 dark:border-[#331A3B] p-2.5 text-xs">
                       <p className="text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{n.body}</p>
-                      <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                         {n.authorName ?? "Staff"} • {formatDateTime(n.createdAt)}
                       </p>
                     </div>
@@ -859,7 +859,7 @@ const ActionDialog: React.FC<{ target: ActionTarget; onClose: () => void }> = ({
               </div>
             )}
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">Allowed hours, zones, vehicles and service types already set on the record are preserved.</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Allowed hours, zones, vehicles and service types already set on the record are preserved.</p>
         </div>
       )}
     </ConfirmDialog>

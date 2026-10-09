@@ -1,63 +1,94 @@
 /** Session, dashboard KPIs / alerts, ops snapshot and the live map. */
 import type { ApiAlert, ApiAlerts, ApiKpis, ApiMetric } from "../../adapters/dashboard";
 import { buildLiveMap, buildSnapshot, onlineCaptainCount } from "../logic/ops";
-import { effectiveCities, inScope } from "../logic/scope";
+import { parseBoundary, startOfLocalDay } from "../logic/time";
+import { inScope } from "../logic/scope";
 import { type Router, ok } from "../router";
 import type { DemoStore } from "../store";
 import { DAY, HOUR, MIN, iso } from "../util";
 
-const SHARE: number[] = [0.68, 0.19, 0.13];
+const SETTLED = new Set(["COMPLETED", "PAYMENT_PENDING", "PAYMENT_COMPLETED", "PAYMENT_FAILED", "RATED", "CLOSED"]);
 
-function metric(value: number, previousFactor: number, decimals = 0): ApiMetric {
+function metricOf(value: number, previous: number, decimals = 0): ApiMetric {
   const f = 10 ** decimals;
   const v = Math.round(value * f) / f;
-  const previous = Math.round((v / previousFactor) * f) / f;
-  return { value: v, previous, delta: Math.round((v - previous) * f) / f, deltaPct: previous === 0 ? null : Math.round(((v - previous) / previous) * 1000) / 10 };
+  const p = Math.round(previous * f) / f;
+  return { value: v, previous: p, delta: Math.round((v - p) * f) / f, deltaPct: p === 0 ? null : Math.round(((v - p) / p) * 1000) / 10 };
 }
 
-function cityShare(store: DemoStore, cityId: string | undefined): number {
-  return effectiveCities(store, cityId ?? null).reduce((sum, id) => sum + (SHARE[store.cities.findIndex((c) => c.id === id)] ?? 0.1), 0);
+interface PeriodStats {
+  requested: number;
+  completed: number;
+  cancelled: number;
+  noDriver: number;
+  gmv: number;
+  revenue: number;
+  riders: number;
+  captains: number;
+}
+
+/** Ride KPIs of a period, computed from the same rides the Rides tab lists (so every screen agrees). */
+function periodStats(store: DemoStore, from: number, to: number, cityId: string | undefined): PeriodStats {
+  const s: PeriodStats = { requested: 0, completed: 0, cancelled: 0, noDriver: 0, gmv: 0, revenue: 0, riders: 0, captains: 0 };
+  const riders = new Set<string>();
+  const captains = new Set<string>();
+  for (const row of store.rides) {
+    const rec = row.rec;
+    const t = new Date(rec.requestedAt).getTime();
+    if (t < from || t >= to || rec.status === "SCHEDULED") continue;
+    if (!inScope(store, rec.cityId) || (cityId && rec.cityId !== cityId)) continue;
+    s.requested += 1;
+    if (SETTLED.has(rec.status)) {
+      s.completed += 1;
+      s.gmv += rec.finalFareMinor ?? 0;
+      s.revenue += (rec.fareBreakdown?.platformCommissionMinor ?? 0) + (rec.fareBreakdown?.bookingFeeMinor ?? 0);
+      riders.add(rec.riderId);
+      if (rec.captainId) captains.add(rec.captainId);
+    } else if (rec.status === "CANCELLED") s.cancelled += 1;
+    else if (rec.status === "NO_DRIVER_AVAILABLE") s.noDriver += 1;
+  }
+  s.riders = riders.size;
+  s.captains = captains.size;
+  return s;
 }
 
 function kpis(store: DemoStore, query: Record<string, string>): ApiKpis {
   const now = Date.now();
   const cityId = query.cityId || undefined;
-  const fromMs = query.from ? new Date(query.from).getTime() : NaN;
-  const days = Number.isFinite(fromMs) ? Math.max(1, Math.floor((now - fromMs) / DAY) + 1) : 1;
-  const share = cityShare(store, cityId);
-  const scale = share * days * (days > 1 ? 0.97 : 1);
-  const requested = 120 * scale;
-  const completed = requested * 0.82;
-  const cancelled = requested * 0.11;
-  const noDriver = requested * 0.07;
-  const gmv = completed * 2740;
+  const from = query.from ? parseBoundary(query.from, "from") : startOfLocalDay(now);
+  const to = query.to ? parseBoundary(query.to, "to") : now;
+  const len = Math.max(1, to - from);
+  const cur = periodStats(store, from, to, cityId);
+  const prev = periodStats(store, from - len, from, cityId);
+  const rate = (a: number, b: number) => (b > 0 ? (a / b) * 100 : 0);
+  const days = Math.max(1, Math.round(len / DAY));
   const incidents = store.incidents.filter((i) => (i.status === "ACTIVE" || i.status === "ACKNOWLEDGED") && i.type === "SOS" && inScope(store, i.cityId) && (!cityId || i.cityId === cityId));
   return {
     generatedAt: iso(now),
     cityId: cityId ?? null,
     currency: "USD",
-    period: { from: iso(now - days * DAY), to: iso(now) },
-    previousPeriod: { from: iso(now - 2 * days * DAY), to: iso(now - days * DAY) },
+    period: { from: iso(from), to: iso(to) },
+    previousPeriod: { from: iso(from - len), to: iso(from) },
     kpis: {
-      ridesRequested: metric(requested, 1.04),
-      ridesCompleted: metric(completed, 1.06),
-      ridesCancelled: metric(cancelled, 0.95),
-      ridesNoDriver: metric(noDriver, 0.91),
-      completionRate: metric(82, 1.02, 1),
-      cancellationRate: metric(11, 0.97, 1),
-      noDriverRate: metric(7, 0.93, 1),
-      gmvMinor: metric(gmv, 1.08),
-      platformRevenueMinor: metric(gmv * 0.205, 1.09),
-      activeRiders: metric(requested * 0.64, 1.05),
-      activeCaptains: metric(Math.max(4, 13 * share * (1 + Math.log(days) * 0.18)), 1.02),
-      avgRating: metric(4.82, 1.003, 2),
-      avgPickupEtaSeconds: metric(318, 0.96),
-      paymentFailureRate: metric(1.4, 0.88, 1),
+      ridesRequested: metricOf(cur.requested, prev.requested),
+      ridesCompleted: metricOf(cur.completed, prev.completed),
+      ridesCancelled: metricOf(cur.cancelled, prev.cancelled),
+      ridesNoDriver: metricOf(cur.noDriver, prev.noDriver),
+      completionRate: metricOf(rate(cur.completed, cur.requested), rate(prev.completed, prev.requested), 1),
+      cancellationRate: metricOf(rate(cur.cancelled, cur.requested), rate(prev.cancelled, prev.requested), 1),
+      noDriverRate: metricOf(rate(cur.noDriver, cur.requested), rate(prev.noDriver, prev.requested), 1),
+      gmvMinor: metricOf(cur.gmv, prev.gmv),
+      platformRevenueMinor: metricOf(cur.revenue, prev.revenue),
+      activeRiders: metricOf(cur.riders, prev.riders),
+      activeCaptains: metricOf(cur.captains, prev.captains),
+      avgRating: metricOf(4.82, 4.8, 2),
+      avgPickupEtaSeconds: metricOf(318 + (days % 3) * 6, 331),
+      paymentFailureRate: metricOf(1.4, 1.6, 1),
     },
     live: {
       onlineCaptains: onlineCaptainCount(store, cityId ?? null),
       openSos: incidents.length,
-      openTickets: Math.max(1, Math.round(7 * (cityId ? share * 1.4 : 1))),
+      openTickets: Math.max(1, Math.round(7 * (cityId ? 0.6 : 1))),
       pendingCaptainApprovals: store.captains.filter((c) => (c.d.status === "SUBMITTED" || c.d.status === "UNDER_REVIEW") && inScope(store, c.d.cityId) && (!cityId || c.d.cityId === cityId)).length,
       pendingRefunds: store.refunds.filter((x) => x.status === "PENDING").length,
     },

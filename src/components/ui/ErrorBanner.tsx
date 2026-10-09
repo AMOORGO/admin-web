@@ -24,7 +24,7 @@ export const ErrorBanner: React.FC<ErrorBannerProps> = ({ error, title = "Someth
       <div className="min-w-0 flex-1">
         <p className="font-bold text-[#B02414] dark:text-[#FFA093]">{title}</p>
         <p className="mt-0.5 break-words text-[#B02414]/90 dark:text-[#FFA093]/90">{errorMessage(error)}</p>
-        {requestId && <p className="mt-1 font-mono text-[10px] text-slate-500 dark:text-slate-400">Request ID: {requestId}</p>}
+        {requestId && <p className="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">Request ID: {requestId}</p>}
       </div>
       {onRetry && (
         <button

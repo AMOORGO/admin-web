@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Siren, ShieldCheck } from "lucide-react";
+import { Siren, ShieldCheck, Hourglass, Timer } from "lucide-react";
+import { StatCard, StatGrid } from "@/components/ui/StatCard";
+import { countLabel, useListCount } from "@/lib/hooks/useListCount";
 import { Badge } from "@/components/Badge";
 import { EmptyState, LoadMore } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -76,6 +78,8 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
   const now = useNow(1000, activeSosRunning);
   const ctx = { now, cityName, staffName: staff.nameOf };
 
+  const ackCount = useListCount("/admin/incidents", { status: "ACKNOWLEDGED", cityId: city }, "incidents");
+  const slaBreaches = active.items.filter((i) => i.slaBreached || (i.ackDueAt !== null && new Date(i.ackDueAt).getTime() < now)).length;
   const handledToday = (today.data ?? []).filter((i) => i.status === "RESOLVED" || i.status === "FALSE_ALARM").length;
   const logRows = log.items.map((i) => toIncident(i, ctx));
 
@@ -91,19 +95,12 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
         description="Real-time SOS triggers, acknowledgement SLA, incident timeline, and contact logging"
       />
 
-      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:max-w-xl">
-        <div className="min-w-0 rounded-xl border border-[#FFC4BC] bg-[#FFF3F1] px-3.5 py-2 text-xs dark:border-[#61130A] dark:bg-[#38110D]">
-          <span className="text-[10px] font-bold uppercase text-[#B02414] dark:text-[#FF7361]">Active Alarms</span>
-          <p className="font-mono font-black text-[#B02414] dark:text-[#FF7361]">
-            {active.items.length}
-            {active.hasMore ? "+" : ""} Unacknowledged
-          </p>
-        </div>
-        <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
-          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Handled Today</span>
-          <p className="font-mono font-black text-emerald-700 dark:text-emerald-400">{today.data ? handledToday : "—"} Closed</p>
-        </div>
-      </div>
+      <StatGrid cols={4}>
+        <StatCard label="Active alarms" icon={Siren} tone={active.items.length > 0 ? "bad" : "good"} loading={active.initialLoading} value={`${active.items.length}${active.hasMore ? "+" : ""}`} hint="Unacknowledged" />
+        <StatCard label="Acknowledged" icon={Hourglass} tone="warn" loading={ackCount.loading} value={countLabel(ackCount)} hint="In progress with a responder" />
+        <StatCard label="Resolved today" icon={ShieldCheck} tone="good" loading={today.initialLoading} value={today.data ? String(handledToday) : "—"} hint="Closed or marked false alarm" />
+        <StatCard label="SLA breaches" icon={Timer} tone={slaBreaches > 0 ? "bad" : "good"} loading={active.initialLoading} value={String(slaBreaches)} hint={slaBreaches > 0 ? "Past the acknowledgement SLA" : "All within SLA"} />
+      </StatGrid>
 
       {/* Active Critical Incidents */}
       {active.error && <ErrorBanner error={active.error} title="Could not load active incidents" onRetry={active.refetch} />}
@@ -162,7 +159,7 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
             <div className="data-table-container sticky-first">
               <table className="w-full min-w-[60rem] text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                     <th className="py-3 px-4">Incident</th>
                     <th className="py-3 px-4">City</th>
                     <th className="py-3 px-4">Initiator</th>
@@ -178,7 +175,7 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
                     <tr key={inc.id} onClick={() => onOpenSOSModal(inc.id)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-[#28162E]/30">
                       <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
                         {inc.ref}
-                        <p className="font-sans text-[10px] font-normal text-slate-500 dark:text-slate-400">{humanize(inc.type)}</p>
+                        <p className="font-sans text-xs font-normal text-slate-500 dark:text-slate-400">{humanize(inc.type)}</p>
                       </td>
                       <td className="py-3 px-4">{inc.city}</td>
                       <td className="py-3 px-4 font-semibold">{inc.realm === "CAPTAIN" ? "Captain" : "Rider"}</td>
@@ -252,7 +249,7 @@ const ActiveCard: React.FC<ActiveCardProps> = ({ summary, ctx, onOpen }) => {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {incident.slaRunning && (
             <div className={`rounded-2xl border px-4 py-2 text-center ${breached ? "bg-rose-600 text-white border-rose-700" : "bg-[#FFF3F1] dark:bg-[#38110D] border-[#FFC4BC] text-[#B02414] dark:border-[#61130A] dark:text-[#FF7361]"}`}>
-              <span className="text-[10px] font-bold uppercase">{breached ? "SLA BREACHED" : "SLA TIMER"}</span>
+              <span className="text-xs font-bold uppercase">{breached ? "SLA BREACHED" : "SLA TIMER"}</span>
               <p className="text-xl font-mono font-black">{incident.slaSecondsLeft}s Left</p>
             </div>
           )}
@@ -276,8 +273,8 @@ const ActiveCard: React.FC<ActiveCardProps> = ({ summary, ctx, onOpen }) => {
 
 const Tile: React.FC<{ label: string; value: string; sub?: string; mono?: boolean; accent?: boolean }> = ({ label, value, sub, mono, accent }) => (
   <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-[#331A3B] dark:bg-[#211226]">
-    <span className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold">{label}</span>
+    <span className="text-slate-500 dark:text-slate-400 text-xs uppercase font-bold">{label}</span>
     <p className={`truncate font-bold ${mono ? "font-mono" : ""} ${accent ? "text-[#7A2B66] dark:text-[#DB99CC]" : "text-slate-900 dark:text-white"}`}>{value}</p>
-    {sub && <p className="text-[10px] text-slate-500 dark:text-slate-400">{sub}</p>}
+    {sub && <p className="text-xs text-slate-500 dark:text-slate-400">{sub}</p>}
   </div>
 );
