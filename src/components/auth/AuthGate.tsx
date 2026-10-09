@@ -9,7 +9,7 @@ export const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const { status } = useAuth();
   if (status === "booting") {
     return (
-      <div role="status" aria-label="Loading" className="flex min-h-screen items-center justify-center bg-[#FDFBFC] dark:bg-[#0F0811]">
+      <div role="status" aria-label="Loading" className="flex min-h-dvh items-center justify-center bg-[#FDFBFC] dark:bg-[#0F0811]">
         <span className="h-3 w-3 animate-ping rounded-full bg-[#F94B35]" />
       </div>
     );

@@ -46,12 +46,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="pointer-events-none fixed bottom-4 right-4 z-[70] flex w-full max-w-sm flex-col gap-2" aria-live="polite">
+      <div className="pointer-events-none fixed inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[120] flex flex-col gap-2 sm:inset-x-auto sm:right-4 sm:w-full sm:max-w-sm" aria-live="polite">
         {items.map((t) => (
           <div
             key={t.id}
             role={t.kind === "error" ? "alert" : "status"}
-            className={`pointer-events-auto flex items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-xl ${
+            className={`anim-pop pointer-events-auto flex items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-xl ${
               t.kind === "success"
                 ? "border-[#B4F2E1] dark:border-[#14755F] bg-[#EFFCF9] dark:bg-[#0D2620] text-[#14755F] dark:text-[#82E5CB]"
                 : "border-[#FFC4BC] dark:border-[#61130A] bg-[#FFF3F1] dark:bg-[#38110D] text-[#B02414] dark:text-[#FFA093]"
@@ -59,7 +59,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           >
             {t.kind === "success" ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
             <p className="flex-1 break-words font-medium">{t.message}</p>
-            <button type="button" onClick={() => dismiss(t.id)} className="opacity-60 hover:opacity-100" aria-label="Dismiss">
+            <button type="button" onClick={() => dismiss(t.id)} className="-mr-2 -mt-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg opacity-70 hover:opacity-100" aria-label="Dismiss">
               <X className="h-4 w-4" />
             </button>
           </div>

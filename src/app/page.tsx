@@ -126,7 +126,7 @@ function ConsoleShell() {
           className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:p-6 lg:p-8"
         >
           {currentTab === null && (
-            <div className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-10 text-center text-sm text-slate-500">
+            <div className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-10 text-center text-sm text-slate-500 dark:text-slate-400">
               Your account has no console permissions yet. Ask a Super Admin to assign a role.
             </div>
           )}

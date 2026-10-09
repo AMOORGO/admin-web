@@ -161,7 +161,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 aria-label="Search live rides"
-                className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-500 dark:border-[#331A3B] dark:bg-[#211226] dark:text-white sm:min-h-9"
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-500 dark:border-[#331A3B] dark:bg-[#211226] dark:text-white pointer-fine:min-h-10"
               />
             </div>
 
@@ -171,7 +171,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
                   key={st.id}
                   onClick={() => setStatusFilter(st.id)}
                   aria-pressed={statusFilter === st.id}
-                  className={`min-h-10 shrink-0 whitespace-nowrap rounded-lg px-3 font-semibold transition-colors sm:min-h-8 ${
+                  className={`min-h-10 shrink-0 whitespace-nowrap rounded-lg px-3 font-semibold transition-colors pointer-fine:min-h-8 ${
                     statusFilter === st.id
                       ? "bg-[#3A102F] text-white"
                       : "bg-slate-100 text-slate-700 hover:text-black dark:bg-[#211226] dark:text-slate-300 dark:hover:text-white"

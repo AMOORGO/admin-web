@@ -4,7 +4,7 @@ import { AcceptInviteScreen } from "@/components/auth/AcceptInviteScreen";
 export const metadata = { title: "Accept invitation — AmoorGo Ops" };
 
 function Loading() {
-  return <div role="status" aria-label="Loading" className="min-h-screen bg-[#FDFBFC] dark:bg-[#0F0811]" />;
+  return <div role="status" aria-label="Loading" className="min-h-dvh bg-[#FDFBFC] dark:bg-[#0F0811]" />;
 }
 
 async function InviteToken({ params }: { params: Promise<{ token: string }> }) {

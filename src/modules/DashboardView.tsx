@@ -51,7 +51,7 @@ const localDate = (daysBack: number): string => {
 const SEVERITY_STYLE: Record<DashboardAlertView["severity"], { box: string; icon: string; Icon: React.ElementType }> = {
   critical: {
     box: "border-[#FFC4BC] dark:border-[#61130A] bg-[#FFF3F1]/60 dark:bg-[#38110D]/30 hover:border-[#F94B35]",
-    icon: "bg-[#FFF3F1] dark:bg-[#38110D] text-[#F94B35]",
+    icon: "bg-[#FFF3F1] dark:bg-[#38110D] text-[#D93320] dark:text-[#FF7361]",
     Icon: Siren,
   },
   warning: {
@@ -136,7 +136,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       value: onlineCaptains === null ? "—" : String(onlineCaptains),
       trend: dash ? `${dash.activeCaptains.value} captains completed trips (${periodLabel.toLowerCase()})` : "Loading...",
       icon: Users,
-      color: "text-[#189578] dark:text-[#82E5CB]",
+      color: "text-[#14755F] dark:text-[#82E5CB]",
       bgColor: "bg-[#EFFCF9] dark:bg-[#0D2620]",
       action: undefined,
     },
@@ -154,7 +154,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       value: dash ? formatMoney(dash.revenue.value, currency) : "—",
       trend: dash ? formatDelta(dash.revenue.deltaPct) : "Loading...",
       icon: TrendingUp,
-      color: "text-[#189578] dark:text-[#82E5CB]",
+      color: "text-[#14755F] dark:text-[#82E5CB]",
       bgColor: "bg-[#EFFCF9] dark:bg-[#0D2620]",
       action: undefined,
     },
@@ -163,7 +163,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       value: dash && dash.etaMinutes.value > 0 ? `${dash.etaMinutes.value.toFixed(1)} min` : "—",
       trend: dash ? (dash.etaMinutes.value > 0 ? formatDelta(dash.etaMinutes.deltaPct) : "No accepted offers in period") : "Loading...",
       icon: Clock,
-      color: "text-amber-600 dark:text-amber-400",
+      color: "text-amber-700 dark:text-amber-400",
       bgColor: "bg-amber-50 dark:bg-amber-950/40",
       action: undefined,
     },
@@ -172,7 +172,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       value: dash ? (openSos > 0 ? `${openSos} OPEN` : "0 Clean") : "—",
       trend: openSos > 0 ? "Tap to open the SOS console" : "No open incidents",
       icon: Siren,
-      color: openSos > 0 ? "text-[#F94B35]" : "text-[#189578]",
+      color: openSos > 0 ? "text-[#D93320] dark:text-[#FF7361]" : "text-[#14755F] dark:text-[#4FD2B2]",
       bgColor: openSos > 0 ? "bg-[#FFF3F1] dark:bg-[#38110D]" : "bg-[#EFFCF9] dark:bg-[#0D2620]",
       action: openSos > 0 ? () => onOpenSOSModal(activeIncident?.id) : undefined,
     },
@@ -191,14 +191,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Top Banner if SOS Active */}
       {openSos > 0 && (
-        <div className="rounded-2xl border-2 border-[#F94B35] bg-[#FFF3F1] dark:bg-[#38110D] p-4 flex flex-wrap items-center justify-between gap-4 shadow-lg animate-sos">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F94B35] text-white">
-              <Siren className="h-5 w-5 animate-pulse" />
+        <div className="animate-sos flex flex-col gap-3 rounded-2xl border-2 border-[#F94B35] bg-[#FFF3F1] p-4 shadow-lg dark:bg-[#38110D] sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#D93320] text-white">
+              <Siren className="h-5 w-5 motion-safe:animate-pulse" aria-hidden="true" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase text-[#F94B35]">Active Emergency Alert</span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-black uppercase text-[#B02414] dark:text-[#FF7361]">Active Emergency Alert</span>
                 {activeIncident && (
                   <Badge variant="coral" size="sm" pulse>
                     SLA: {activeIncident.slaSecondsLeft}s
@@ -214,7 +214,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
           </div>
           <button
             onClick={() => onOpenSOSModal(activeIncident?.id)}
-            className="rounded-xl bg-[#F94B35] hover:bg-[#D93320] text-white px-5 py-2 text-xs font-bold transition-all shadow-md"
+            className="min-h-11 w-full rounded-xl bg-[#D93320] px-5 py-2 text-xs font-bold text-white shadow-md transition-colors hover:bg-[#B02414] sm:w-auto sm:shrink-0"
           >
             Open SOS Command Console
           </button>
@@ -222,19 +222,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       )}
 
       {/* Period selector */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Operations Dashboard</h1>
-          <p className="text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-black sm:text-xl text-slate-900 dark:text-white">Operations Dashboard</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             {selectedCity?.name ?? "All cities"} • money and ride KPIs for {periodLabel.toLowerCase()} vs the previous equal period
           </p>
         </div>
-        <div className="flex rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-1 text-xs">
+        <div role="group" aria-label="Period" className="flex w-full rounded-xl border border-slate-200 bg-white p-1 text-xs dark:border-[#331A3B] dark:bg-[#180D1C] sm:w-auto">
           {PERIODS.map((p) => (
             <button
               key={p.id}
               onClick={() => setPeriod({ id: p.id, from: p.days === 0 ? undefined : localDate(p.days) })}
-              className={`rounded-lg px-3 py-1.5 font-bold transition-all ${
+              aria-pressed={period.id === p.id}
+              className={`min-h-10 flex-1 whitespace-nowrap rounded-lg px-3 font-bold transition-colors sm:flex-none ${
                 period.id === p.id ? "bg-[#3A102F] text-white dark:bg-[#7A2B66]" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#28162E]"
               }`}
             >
@@ -250,26 +251,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       {kpisQ.initialLoading ? (
         <CardsSkeleton count={6} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           {kpis.map((kpi, idx) => {
             const Icon = kpi.icon;
             return (
               <div
                 key={idx}
                 onClick={kpi.action}
-                className={`rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-4 shadow-xs transition-all hover:shadow-md ${
+                {...(kpi.action ? { role: "button", tabIndex: 0, onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); kpi.action?.(); } } } : {})}
+                className={`min-w-0 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-4 shadow-xs transition-all hover:shadow-md ${
                   kpi.action ? "cursor-pointer hover:border-[#F94B35]" : ""
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{kpi.title}</span>
-                  <div className={`rounded-xl p-2 ${kpi.bgColor} ${kpi.color}`}>
+                  <span className="min-w-0 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{kpi.title}</span>
+                  <div className={`shrink-0 rounded-xl p-2 ${kpi.bgColor} ${kpi.color}`}>
                     <Icon className="h-4 w-4" />
                   </div>
                 </div>
                 <div className="mt-2">
-                  <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{kpi.value}</h3>
-                  <p className="text-[11px] font-medium text-slate-500 mt-0.5">{kpi.trend}</p>
+                  <h3 className="truncate text-xl font-black tracking-tight text-slate-900 dark:text-white" title={kpi.value}>{kpi.value}</h3>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">{kpi.trend}</p>
                 </div>
               </div>
             );
@@ -280,16 +282,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       {/* Live Fleet Radar Map Widget */}
       {canRides && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div className="min-w-0">
               <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Zap className="h-4 w-4 text-[#F94B35]" />
+                <Zap className="h-4 w-4 text-[#D93320] dark:text-[#FF7361]" />
                 Live Fleet Operations & Real-Time Telemetry
               </h2>
-              <p className="text-xs text-slate-500">Online captains (clustered) and active ride tracks</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Online captains (clustered) and active ride tracks</p>
             </div>
-            <button onClick={() => onNavigateToTab("live-ops")} className="text-xs font-bold text-[#7A2B66] dark:text-[#DB99CC] hover:underline flex items-center gap-1">
-              Expanded Live Radar <ArrowRight className="h-3.5 w-3.5" />
+            <button onClick={() => onNavigateToTab("live-ops")} className="flex min-h-10 items-center gap-1 text-xs font-bold text-[#7A2B66] dark:text-[#DB99CC] hover:underline flex items-center gap-1">
+              Open Live Radar <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
           {map.error && <ErrorBanner error={map.error} title="Could not load the live map" onRetry={map.refetch} />}
@@ -307,10 +309,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       )}
 
       {/* Two Column Section: Outcomes + Urgent Operations Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
         {/* Ride outcomes */}
-        <div className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="min-w-0 space-y-4 rounded-2xl border border-[#F0E3ED] bg-white p-4 shadow-xs dark:border-[#331A3B] dark:bg-[#180D1C] sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-black text-slate-900 dark:text-white">Ride Outcomes ({periodLabel})</h3>
             {dash && (
               <Badge variant="teal" size="sm">
@@ -343,14 +345,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
             </div>
           )}
 
-          <p className="text-[11px] text-slate-400 italic">Rides requested in the selected period (scheduled rides still waiting for pickup are excluded).</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">Rides requested in the selected period (scheduled rides still waiting for pickup are excluded).</p>
         </div>
 
         {/* Operational Attention Feed */}
-        <div className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="min-w-0 space-y-4 rounded-2xl border border-[#F0E3ED] bg-white p-4 shadow-xs dark:border-[#331A3B] dark:bg-[#180D1C] sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-black text-slate-900 dark:text-white">Operations Attention Feed</h3>
-            <span className="text-xs text-slate-400 font-mono">{alertsQ.data && now ? `Updated ${timeAgo(alertsQ.data.generatedAt, now)}` : "Syncing"}</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{alertsQ.data && now ? `Updated ${timeAgo(alertsQ.data.generatedAt, now)}` : "Syncing"}</span>
           </div>
 
           {alertsQ.error && <ErrorBanner error={alertsQ.error} title="Could not load alerts" onRetry={alertsQ.refetch} />}
@@ -372,12 +374,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
                   <div
                     key={alert.type}
                     onClick={() => (alert.type === "ACTIVE_SOS" ? onOpenSOSModal(activeIncident?.id) : tab && onNavigateToTab(tab))}
-                    className={`rounded-xl border p-3.5 flex items-start gap-3 transition-all ${tab || alert.type === "ACTIVE_SOS" ? "cursor-pointer" : ""} ${style.box}`}
+                    className={`flex items-start gap-3 rounded-xl border p-3.5 transition-colors ${tab || alert.type === "ACTIVE_SOS" ? "cursor-pointer" : ""} ${style.box}`}
                   >
-                    <div className={`p-2 rounded-lg ${style.icon}`}>
+                    <div className={`shrink-0 rounded-lg p-2 ${style.icon}`}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    <div className="flex-1 text-xs">
+                    <div className="min-w-0 flex-1 text-xs">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-slate-900 dark:text-white">{alert.title}</span>
                         <Badge variant={alert.severity === "critical" ? "coral" : alert.severity === "warning" ? "warning" : "plum"} size="sm">
@@ -396,7 +398,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
       {/* Recent rides */}
       {canRides && (
         <div className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] shadow-xs overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0E3ED] dark:border-[#331A3B]">
+          <div className="flex items-center justify-between gap-3 border-b border-[#F0E3ED] px-4 py-3 dark:border-[#331A3B] sm:px-5 sm:py-4">
             <h3 className="text-sm font-black text-slate-900 dark:text-white">Recent Rides</h3>
             <button onClick={() => onNavigateToTab("rides")} className="text-xs font-bold text-[#7A2B66] dark:text-[#DB99CC] hover:underline flex items-center gap-1">
               All rides <ArrowRight className="h-3.5 w-3.5" />
@@ -416,19 +418,46 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
           ) : recentRides.length === 0 ? (
             <EmptyState title="No rides yet" description="Rides will appear here as soon as riders start booking." className="py-8" />
           ) : (
-            <div className="data-table-container">
+            <>
+            <ul className="divide-y divide-slate-100 dark:divide-[#331A3B] sm:hidden">
+              {recentRides.map((ride) => (
+                <li key={ride.id}>
+                  <button type="button" onClick={() => onSelectRide(ride.id)} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50/70 dark:hover:bg-[#28162E]/30">
+                    <span className="min-w-0">
+                      <span className="block truncate font-mono text-xs font-bold text-slate-900 dark:text-white">
+                        {ride.bookingCode}
+                        {ride.hasSOSAlert && <span className="ml-1.5 text-[10px] font-black text-rose-600">SOS</span>}
+                      </span>
+                      <span className="block truncate text-[11px] text-slate-600 dark:text-slate-300">
+                        {ride.rider.name} • {ride.captain ? ride.captain.name : "no captain"}
+                      </span>
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400">
+                        {ride.city} • {now ? timeAgo(ride.requestedAt, now) : formatDateTime(ride.requestedAt)}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <Badge variant={statusVariant(ride.rawStatus)} size="sm">
+                        {statusLabel(ride.rawStatus)}
+                      </Badge>
+                      <span className="font-mono text-xs font-bold text-slate-900 dark:text-white">{formatMoney(ride.finalFareMinor ?? ride.estimatedFareMinor, ride.currency)}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="data-table-container table-compact hidden sm:block">
               <table className="w-full text-left border-collapse text-xs">
                 <tbody className="divide-y divide-slate-100 dark:divide-[#331A3B]">
                   {recentRides.map((ride) => (
                     <tr key={ride.id} onClick={() => onSelectRide(ride.id)} className="cursor-pointer hover:bg-slate-50/70 dark:hover:bg-[#28162E]/30 transition-colors">
                       <td className="py-3 px-5">
                         <span className="font-mono font-bold text-slate-900 dark:text-white">{ride.bookingCode}</span>
-                        {ride.hasSOSAlert && <span className="ml-1.5 text-[10px] text-rose-500 font-black">SOS</span>}
-                        <p className="text-[10px] text-slate-400">{ride.city}</p>
+                        {ride.hasSOSAlert && <span className="ml-1.5 text-[10px] text-rose-600 dark:text-rose-400 font-black">SOS</span>}
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{ride.city}</p>
                       </td>
                       <td className="py-3 px-4 text-slate-700 dark:text-slate-200">
                         {ride.rider.name}
-                        <p className="text-[10px] text-slate-400">{ride.captain ? `with ${ride.captain.name}` : "no captain"}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{ride.captain ? `with ${ride.captain.name}` : "no captain"}</p>
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant={statusVariant(ride.rawStatus)} size="sm" dot>
@@ -436,12 +465,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ selectedCityId, on
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white">{formatMoney(ride.finalFareMinor ?? ride.estimatedFareMinor, ride.currency)}</td>
-                      <td className="py-3 px-5 text-right text-[10px] text-slate-400 whitespace-nowrap">{now ? timeAgo(ride.requestedAt, now) : formatDateTime(ride.requestedAt)}</td>
+                      <td className="py-3 px-5 text-right text-[10px] text-slate-500 dark:text-slate-400 whitespace-nowrap">{now ? timeAgo(ride.requestedAt, now) : formatDateTime(ride.requestedAt)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       )}

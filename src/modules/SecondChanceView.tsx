@@ -8,8 +8,6 @@ import {
   Sliders,
   Clock,
   Gauge,
-  Search,
-  X,
   Moon,
   CheckCircle,
   XCircle,
@@ -20,6 +18,8 @@ import {
   Send,
 } from "lucide-react";
 import { Badge } from "@/components/Badge";
+import { Sheet } from "@/components/ui/Sheet";
+import { ChipTabs, FilterRow, SearchInput, Toolbar, fieldClass } from "@/components/ui/Page";
 import { Can } from "@/components/Can";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
@@ -95,24 +95,24 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Brand Header Banner */}
-      <div className="rounded-3xl border border-[#FFC4BC] dark:border-[#61130A] bg-gradient-to-r from-[#FFF3F1] via-white to-[#FAF0F7] dark:from-[#38110D]/40 dark:via-[#180D1C] dark:to-[#331A3B]/40 p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F94B35] text-white">
-                <Heart className="h-4 w-4 fill-current" />
+      <div className="rounded-3xl border border-[#FFC4BC] bg-gradient-to-r from-[#FFF3F1] via-white to-[#FAF0F7] p-4 shadow-sm dark:border-[#61130A] dark:from-[#38110D]/40 dark:via-[#180D1C] dark:to-[#331A3B]/40 sm:p-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#D93320] text-white">
+                <Heart className="h-4 w-4 fill-current" aria-hidden="true" />
               </div>
-              <h1 className="text-xl font-black text-slate-900 dark:text-white">Second Chance Driver Management</h1>
+              <h1 className="text-lg font-black text-slate-900 dark:text-white sm:text-xl">Second Chance Driver Management</h1>
               <Badge variant="coral" size="sm">
                 PRD Section 28
               </Badge>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-2xl leading-relaxed">
+            <p className="max-w-2xl text-xs leading-relaxed text-slate-600 dark:text-slate-300">
               &ldquo;Move in Love. Love is the frequency. Safety is the foundation.&rdquo; — Providing structured rehabilitation, speed telemetry monitoring, and mentored opportunities for qualified drivers.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:shrink-0">
             <StatTile label="Program Drivers" value={s ? `${s.byStatus.APPROVED ?? 0} Enrolled` : "…"} tone="coral" />
             <StatTile label="Pending Applications" value={s ? String(s.pendingApplications) : "…"} tone="plain" />
             <StatTile label="Reviews Due" value={s ? String(s.dueReviews) : "…"} tone="plain" />
@@ -124,31 +124,18 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
       {stats.error && <ErrorBanner error={stats.error} title="Could not load programme statistics" onRetry={stats.refetch} />}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 shadow-xs">
-        <div className="flex gap-1 overflow-x-auto text-xs pb-1 sm:pb-0">
-          {(["ALL", ...SC_STATUSES] as const).map((st) => {
+      <Toolbar>
+        <ChipTabs
+          label="Programme status"
+          items={(["ALL", ...SC_STATUSES] as const).map((st) => {
             const count = st === "ALL" ? undefined : s?.byStatus[st];
-            return (
-              <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`rounded-xl px-3 py-1.5 font-bold transition-all whitespace-nowrap ${
-                  statusFilter === st ? "bg-[#3A102F] text-white dark:bg-[#7A2B66]" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#28162E]"
-                }`}
-              >
-                {st === "ALL" ? "All" : scStatusLabel(st)}
-                {count !== undefined ? ` (${count})` : ""}
-              </button>
-            );
+            return { id: st, label: `${st === "ALL" ? "All" : scStatusLabel(st)}${count !== undefined ? ` (${count})` : ""}` };
           })}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={tierFilter}
-            onChange={(e) => setTierFilter(e.target.value as "ALL" | ApiScTier)}
-            aria-label="Tier"
-            className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] px-2 py-1.5 text-xs text-slate-800 dark:text-white"
-          >
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
+        <FilterRow>
+          <select value={tierFilter} onChange={(e) => setTierFilter(e.target.value as "ALL" | ApiScTier)} aria-label="Tier" className={`${fieldClass} cursor-pointer`}>
             <option value="ALL">All tiers</option>
             {SC_TIERS.map((t) => (
               <option key={t} value={t}>
@@ -156,23 +143,13 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300">
+          <label className="flex min-h-10 cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
             <input type="checkbox" checked={dueOnly} onChange={(e) => setDueOnly(e.target.checked)} className="h-3.5 w-3.5 accent-[#F94B35]" />
             Review due
           </label>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search name, phone, email..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              maxLength={100}
-              className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] pl-9 pr-3 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none"
-            />
-          </div>
-        </div>
-      </div>
+          <SearchInput value={search} onValueChange={setSearch} placeholder="Search name, phone, email..." maxLength={100} className="min-[480px]:col-span-2 lg:ml-auto lg:w-64" />
+        </FilterRow>
+      </Toolbar>
 
       {list.error && <ErrorBanner error={list.error} title="Could not load Second Chance drivers" onRetry={list.refetch} />}
 
@@ -184,30 +161,30 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
           <EmptyState title="No Second Chance records" description="Drivers appear here once they apply from the captain app." icon={Heart} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:gap-5">
           {list.items.map((rec) => {
             const pct = progressPercent(rec);
             const acts = scActionsFor(rec.status);
             const night = nightWindowOf(rec.restrictions);
             return (
-              <div key={rec.captainId} className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-5 shadow-xs space-y-4 hover:shadow-md transition-all">
+              <div key={rec.captainId} className="min-w-0 space-y-4 rounded-2xl border border-[#F0E3ED] bg-white p-4 shadow-xs transition-shadow hover:shadow-md dark:border-[#331A3B] dark:bg-[#180D1C] sm:p-5">
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={avatarFor(rec.captain.name, rec.captain.avatar)} alt={rec.captain.name} className="h-12 w-12 rounded-2xl object-cover border-2 border-[#F94B35]" />
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{rec.captain.name}</h3>
-                      <p className="text-xs text-slate-500">
+                    <img src={avatarFor(rec.captain.name, rec.captain.avatar)} alt="" className="h-12 w-12 shrink-0 rounded-2xl border-2 border-[#F94B35] object-cover" />
+                    <div className="min-w-0">
+                      <h3 className="truncate text-sm font-bold text-slate-900 dark:text-white" title={rec.captain.name}>{rec.captain.name}</h3>
+                      <p className="truncate text-xs text-slate-600 dark:text-slate-300">
                         {rec.captain.phone} • {cityLabel(rec.captain.cityId, rec.captain.city, cities)}
                       </p>
-                      <span className="text-[11px] font-bold text-amber-500">
+                      <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">
                         ★ {rec.captain.totalTrips > 0 ? rec.captain.rating.toFixed(2) : "New"} ({rec.captain.totalTrips} Total Trips)
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex shrink-0 flex-col items-end gap-1">
                     <Badge variant={scStatusVariant(rec.status)} size="sm" dot>
                       {scStatusLabel(rec.status)}
                     </Badge>
@@ -225,35 +202,35 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                     </p>
                   ) : (
                     <>
-                      <div className="flex justify-between text-xs">
+                      <div className="flex flex-wrap justify-between gap-x-3 text-xs">
                         <span className="font-semibold text-slate-700 dark:text-slate-300">
                           Probation Milestones ({rec.probationRidesCompleted} / {rec.probationRidesTarget} rides)
                         </span>
-                        <span className="font-mono font-bold text-[#F94B35]">{pct}%</span>
+                        <span className="font-mono font-bold text-[#D93320] dark:text-[#FF7361]">{pct}%</span>
                       </div>
                       <div className="h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
                         <div className="h-full rounded-full bg-gradient-to-r from-[#F94B35] to-[#7A2B66]" style={{ width: `${pct}%` }} />
                       </div>
                     </>
                   )}
-                  <p className="text-[10px] text-slate-400">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
                     Compliance {rec.complianceScore}% • {rec.incidentCount} incident{rec.incidentCount === 1 ? "" : "s"}
                     {rec.reviewDue ? " • periodic review due" : rec.nextReviewAt ? ` • next review ${displayDate(rec.nextReviewAt)}` : ""}
                   </p>
                 </div>
 
                 {/* Conditions & Safety Controls Checklist */}
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-1 gap-2 text-xs min-[480px]:grid-cols-3">
                   <div className="p-2.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C]">
-                    <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase">
-                      <Gauge className="h-3.5 w-3.5 text-[#F94B35]" />
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">
+                      <Gauge className="h-3.5 w-3.5 text-[#D93320] dark:text-[#FF7361]" />
                       Governor
                     </div>
                     <p className="font-bold text-slate-900 dark:text-white mt-1">{rec.speedGovernorEnabled ? "ACTIVE" : "Standard"}</p>
                   </div>
 
                   <div className="p-2.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C]">
-                    <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase">
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">
                       <Clock className="h-3.5 w-3.5 text-[#7A2B66]" />
                       Max Shift
                     </div>
@@ -261,15 +238,15 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                   </div>
 
                   <div className="p-2.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C]">
-                    <div className="flex items-center gap-1.5 text-slate-500 text-[10px] font-bold uppercase">
-                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">
+                      <ShieldCheck className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
                       Mentor Staff
                     </div>
                     <p className="font-bold text-slate-900 dark:text-white mt-1 truncate">{rec.sponsorMentor || "Operations"}</p>
                   </div>
                 </div>
                 {rec.restrictedNightDriving && (
-                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                  <p className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
                     <Moon className="h-3.5 w-3.5" /> Night driving restricted ({night.start} – {night.end})
                   </p>
                 )}
@@ -277,7 +254,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                 {/* Admin Notes */}
                 {rec.eligibilityNotes && (
                   <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] p-3 text-xs bg-slate-50/50 dark:bg-[#211226]/40 space-y-1">
-                    <span className="text-[10px] font-bold uppercase text-slate-400">Administrative Review Notes</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Administrative Review Notes</span>
                     <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-[11px]">{rec.eligibilityNotes}</p>
                   </div>
                 )}
@@ -286,7 +263,7 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
                 <div className="pt-2 border-t border-slate-100 dark:border-[#331A3B] flex flex-wrap items-center justify-between gap-2">
                   <button
                     onClick={() => setDetailId(rec.captainId)}
-                    className="rounded-xl border border-slate-200 dark:border-[#331A3B] px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#28162E] transition-all"
+                    className="min-h-10 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#331A3B] dark:text-slate-200 dark:hover:bg-[#28162E]"
                   >
                     Details &amp; Actions
                   </button>
@@ -357,12 +334,12 @@ export const SecondChanceView: React.FC<SecondChanceViewProps> = ({ selectedCity
 
 const StatTile: React.FC<{ label: string; value: string; tone: "coral" | "green" | "plain" }> = ({ label, value, tone }) => (
   <div
-    className={`rounded-2xl border bg-white dark:bg-[#180D1C] px-4 py-2 text-right shadow-xs ${
+    className={`min-w-0 rounded-2xl border bg-white px-4 py-2 shadow-xs dark:bg-[#180D1C] ${
       tone === "coral" ? "border-[#FFC4BC] dark:border-[#61130A]" : tone === "green" ? "border-emerald-200 dark:border-emerald-900" : "border-slate-200 dark:border-[#331A3B]"
     }`}
   >
-    <span className="text-[10px] text-slate-400 uppercase font-bold">{label}</span>
-    <p className={`text-lg font-black ${tone === "coral" ? "text-[#F94B35]" : tone === "green" ? "text-emerald-600" : "text-slate-900 dark:text-white"}`}>{value}</p>
+    <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold">{label}</span>
+    <p className={`truncate text-lg font-black ${tone === "coral" ? "text-[#D93320] dark:text-[#FF7361]" : tone === "green" ? "text-emerald-700 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>{value}</p>
   </div>
 );
 
@@ -370,7 +347,7 @@ const StatTile: React.FC<{ label: string; value: string; tone: "coral" | "green"
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3">
-    <p className="text-[10px] font-bold uppercase text-slate-400">{label}</p>
+    <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">{label}</p>
     <div className="mt-1 text-xs font-semibold text-slate-800 dark:text-slate-100 break-words">{children}</div>
   </div>
 );
@@ -406,9 +383,15 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
   const night = nightWindowOf(r);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-[#180D1C] border border-[#F0E3ED] dark:border-[#331A3B] shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
-        <div className="flex items-center justify-between border-b border-[#F0E3ED] dark:border-[#331A3B] px-6 py-4 bg-[#FFF3F1]/50 dark:bg-[#38110D]/20">
+    <Sheet
+      open
+      onClose={onClose}
+      variant="center"
+      widthClass="sm:max-w-4xl"
+      headerClassName="bg-[#FFF3F1]/50 dark:bg-[#38110D]/20"
+      bodyClassName="space-y-5 p-4 sm:p-6"
+      header={
+        <>
           {d ? (
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -423,7 +406,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                     {scTierLabel(d.tier)}
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {d.captain.phone} • {d.captain.email ?? "—"} • {cityLabel(d.captain.cityId, d.captain.city, cities)} • Captain status: {humanize(d.captain.status)}
                 </p>
               </div>
@@ -431,12 +414,26 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
           ) : (
             <Skeleton className="h-11 w-72" />
           )}
-          <button onClick={onClose} aria-label="Close" className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-[#28162E] dark:hover:text-white">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+        </>
+      }
+      footer={
+        d && acts ? (
+          <Can permission="second_chance.manage">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {acts.startReview && <ActionBtn icon={PlayCircle} label="Start Review" onClick={() => onAction("start-review", d)} />}
+              {acts.review && <ActionBtn icon={ClipboardCheck} label="Record Periodic Review" onClick={() => onAction("review", d)} />}
+              {acts.configure && <ActionBtn icon={Sliders} label="Configure Conditions" onClick={() => onAction("restrictions", d)} />}
+              {acts.configure && <ActionBtn icon={Award} label="Change Tier" onClick={() => onAction("tier", d)} />}
+              {acts.requestResubmission && <ActionBtn icon={RotateCcw} label="Request Resubmission" tone="warn" onClick={() => onAction("resubmit", d)} />}
+              {acts.suspend && <ActionBtn icon={PauseCircle} label="Suspend" tone="warn" onClick={() => onAction("suspend", d)} />}
+              {acts.reject && <ActionBtn icon={XCircle} label="Reject" tone="danger" onClick={() => onAction("reject", d)} />}
+              {acts.revoke && <ActionBtn icon={XCircle} label="Revoke" tone="danger" onClick={() => onAction("revoke", d)} />}
+              {acts.approve && <ActionBtn icon={CheckCircle} label={d.status === "APPLIED" || d.status === "UNDER_REVIEW" ? "Approve" : "Reinstate"} tone="good" onClick={() => onAction("approve", d)} />}
+            </div>
+          </Can>
+        ) : undefined
+      }
+    >
           {detail.error && <ErrorBanner error={detail.error} title="Could not load the record" onRetry={detail.refetch} />}
           {!d && !detail.error && <Skeleton className="h-64 w-full" />}
 
@@ -448,7 +445,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                 <Field label="Expires">{displayDate(d.expiresAt)}</Field>
                 <Field label="Next review">
                   {displayDate(d.nextReviewAt)}
-                  {d.reviewDue && <span className="ml-1 text-[#F94B35]">(due)</span>}
+                  {d.reviewDue && <span className="ml-1 text-[#D93320] dark:text-[#FF7361]">(due)</span>}
                 </Field>
                 <Field label="Last audit">{displayDate(d.lastAuditDate)}</Field>
                 <Field label="Compliance score">{d.complianceScore}%</Field>
@@ -463,7 +460,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
               )}
 
               <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Conditions &amp; restrictions</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Conditions &amp; restrictions</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <Field label="Speed governor">{d.speedGovernorEnabled ? "Active" : "Standard"}</Field>
                   <Field label="Max daily hours">{r.maxDailyHours ?? d.maxDailyHours ?? "No limit"}</Field>
@@ -474,19 +471,19 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   <Field label="Allowed vehicles">{r.allowedVehicleIds?.length ? `${r.allowedVehicleIds.length} vehicle(s)` : "Any"}</Field>
                   <Field label="Service types">{r.allowedServiceTypeCodes?.length ? r.allowedServiceTypeCodes.join(", ") : "Any"}</Field>
                 </div>
-                <p className="text-[11px] text-slate-400">Mentor: {d.sponsorMentor || "Operations"}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Mentor: {d.sponsorMentor || "Operations"}</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Previous platforms</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Previous platforms</h4>
                   {d.previousPlatforms.length === 0 ? (
-                    <p className="text-xs text-slate-400">None declared.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">None declared.</p>
                   ) : (
                     d.previousPlatforms.map((p, i) => (
                       <div key={i} className="rounded-xl border border-slate-200 dark:border-[#331A3B] p-2.5 text-xs">
                         <p className="font-bold text-slate-800 dark:text-slate-100">{p.name}</p>
-                        <p className="text-slate-500">
+                        <p className="text-slate-500 dark:text-slate-400">
                           {p.reasonCategory ? humanize(p.reasonCategory) : "Reason not given"}
                           {p.deactivatedAt ? ` • deactivated ${displayDate(p.deactivatedAt)}` : ""}
                         </p>
@@ -495,16 +492,16 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   )}
                   {d.deactivationExplanation && (
                     <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50/50 dark:bg-[#211226]/40 p-3 text-xs">
-                      <p className="text-[10px] font-bold uppercase text-slate-400">Captain&apos;s explanation</p>
+                      <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Captain&apos;s explanation</p>
                       <p className="mt-1 text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{d.deactivationExplanation}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Programme documents</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Programme documents</h4>
                   {d.requiredDocuments.length === 0 ? (
-                    <p className="text-xs text-slate-400">No extra documents required.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">No extra documents required.</p>
                   ) : (
                     d.requiredDocuments.map((doc) => (
                       <div key={doc.documentType} className="flex items-center justify-between gap-2 rounded-xl border border-slate-200 dark:border-[#331A3B] p-2.5 text-xs">
@@ -517,7 +514,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   )}
                   {d.eligibilityNotes && (
                     <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50/50 dark:bg-[#211226]/40 p-3 text-xs">
-                      <p className="text-[10px] font-bold uppercase text-slate-400">Administrative review notes</p>
+                      <p className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Administrative review notes</p>
                       <p className="mt-1 text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{d.eligibilityNotes}</p>
                     </div>
                   )}
@@ -526,7 +523,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
 
               {/* Notes */}
               <div className="space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Internal notes</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Internal notes</h4>
                 <Can permission="second_chance.manage">
                   <div className="flex gap-2">
                     <textarea
@@ -548,12 +545,12 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
                   </div>
                 </Can>
                 {d.recentNotes.length === 0 ? (
-                  <p className="text-xs text-slate-400">No notes yet.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">No notes yet.</p>
                 ) : (
                   d.recentNotes.map((n) => (
                     <div key={n.id} className="rounded-xl border border-slate-200 dark:border-[#331A3B] p-2.5 text-xs">
                       <p className="text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{n.body}</p>
-                      <p className="mt-1 text-[10px] text-slate-400">
+                      <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
                         {n.authorName ?? "Staff"} • {formatDateTime(n.createdAt)}
                       </p>
                     </div>
@@ -562,25 +559,7 @@ const SecondChanceDetail: React.FC<{ captainId: string; onClose: () => void; onA
               </div>
             </>
           )}
-        </div>
-
-        {d && acts && (
-          <Can permission="second_chance.manage">
-            <div className="border-t border-[#F0E3ED] dark:border-[#331A3B] px-6 py-4 bg-white dark:bg-[#180D1C] flex flex-wrap items-center justify-end gap-2">
-              {acts.startReview && <ActionBtn icon={PlayCircle} label="Start Review" onClick={() => onAction("start-review", d)} />}
-              {acts.review && <ActionBtn icon={ClipboardCheck} label="Record Periodic Review" onClick={() => onAction("review", d)} />}
-              {acts.configure && <ActionBtn icon={Sliders} label="Configure Conditions" onClick={() => onAction("restrictions", d)} />}
-              {acts.configure && <ActionBtn icon={Award} label="Change Tier" onClick={() => onAction("tier", d)} />}
-              {acts.requestResubmission && <ActionBtn icon={RotateCcw} label="Request Resubmission" tone="warn" onClick={() => onAction("resubmit", d)} />}
-              {acts.suspend && <ActionBtn icon={PauseCircle} label="Suspend" tone="warn" onClick={() => onAction("suspend", d)} />}
-              {acts.reject && <ActionBtn icon={XCircle} label="Reject" tone="danger" onClick={() => onAction("reject", d)} />}
-              {acts.revoke && <ActionBtn icon={XCircle} label="Revoke" tone="danger" onClick={() => onAction("revoke", d)} />}
-              {acts.approve && <ActionBtn icon={CheckCircle} label={d.status === "APPLIED" || d.status === "UNDER_REVIEW" ? "Approve" : "Reinstate"} tone="good" onClick={() => onAction("approve", d)} />}
-            </div>
-          </Can>
-        )}
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -880,7 +859,7 @@ const ActionDialog: React.FC<{ target: ActionTarget; onClose: () => void }> = ({
               </div>
             )}
           </div>
-          <p className="text-[11px] text-slate-400">Allowed hours, zones, vehicles and service types already set on the record are preserved.</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400">Allowed hours, zones, vehicles and service types already set on the record are preserved.</p>
         </div>
       )}
     </ConfirmDialog>

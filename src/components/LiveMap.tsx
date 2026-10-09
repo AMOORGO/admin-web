@@ -267,7 +267,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({ cityLabel, center, rides, clus
   ];
 
   const iconBtn =
-    "flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#28162E] sm:h-9 sm:w-9";
+    "flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-[#28162E] pointer-fine:h-9 pointer-fine:w-9";
 
   const rideInfo = (m: NonNullable<typeof activeRide>) => {
     const lbl = rideLabels?.[m.ride.id];
@@ -302,7 +302,7 @@ export const LiveMap: React.FC<LiveMapProps> = ({ cityLabel, center, rides, clus
               type="button"
               onClick={() => setLayer(l.id)}
               aria-pressed={layer === l.id}
-              className={`min-h-10 rounded-lg px-3 text-xs font-semibold transition-colors sm:min-h-8 ${
+              className={`min-h-10 min-w-10 rounded-lg px-3 text-xs font-semibold transition-colors pointer-fine:min-h-8 ${
                 layer === l.id ? l.active : "text-slate-700 hover:text-black dark:text-slate-300 dark:hover:text-white"
               }`}
             >

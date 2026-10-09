@@ -64,6 +64,9 @@ function focusables(root: HTMLElement): HTMLElement[] {
   return Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.closest("[inert]") && el.getClientRects().length > 0);
 }
 
+/** Open traps, innermost last: only the top-most one handles Tab (a confirm dialog opened from a drawer wins). */
+const trapStack: HTMLElement[] = [];
+
 /**
  * Keeps keyboard focus inside `ref` while `active`, moves focus in on open (first element carrying `data-autofocus`,
  * else the container itself) and restores it to whatever was focused before when the overlay closes.
@@ -74,11 +77,12 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
     const root = ref.current;
     if (!root) return;
     const previous = document.activeElement as HTMLElement | null;
+    trapStack.push(root);
     const auto = root.querySelector<HTMLElement>("[data-autofocus]");
     (auto ?? root).focus({ preventScroll: true });
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
+      if (e.key !== "Tab" || trapStack[trapStack.length - 1] !== root) return;
       const items = focusables(root);
       if (items.length === 0) {
         e.preventDefault();
@@ -102,6 +106,8 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, active: boolean
     document.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("keydown", onKey);
+      const at = trapStack.indexOf(root);
+      if (at >= 0) trapStack.splice(at, 1);
       if (previous && document.contains(previous)) previous.focus({ preventScroll: true });
     };
   }, [ref, active]);

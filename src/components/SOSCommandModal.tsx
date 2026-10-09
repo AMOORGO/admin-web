@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, PhoneCall, Siren, Battery, Gauge, MapPin, UserCheck, ClipboardList, ArrowUpCircle, Car, ExternalLink, Loader2 } from "lucide-react";
+import { PhoneCall, Siren, Battery, Gauge, MapPin, UserCheck, ClipboardList, ArrowUpCircle, Car, ExternalLink, Loader2 } from "lucide-react";
 import { Badge } from "./Badge";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Sheet } from "@/components/ui/Sheet";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { api } from "@/lib/api";
@@ -137,17 +138,26 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
   const effectiveAssignee = assignee || data?.assignedStaffId || staff.meId || "";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-4xl max-h-[92vh] flex flex-col rounded-3xl bg-white dark:bg-[#180D1C] border-2 border-[#F94B35] shadow-2xl overflow-hidden" role="dialog" aria-modal="true">
-        {/* Urgent Header Banner */}
-        <div className="bg-[#FFF3F1] dark:bg-[#38110D] border-b border-[#FFC4BC] dark:border-[#61130A] px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+    <>
+      <Sheet
+        open
+        onClose={onClose}
+        variant="center"
+        widthClass="sm:max-w-4xl"
+        fill
+        danger
+        strongBackdrop
+        headerClassName="bg-[#FFF3F1] dark:bg-[#38110D]"
+        bodyClassName="space-y-6 p-4 sm:p-6"
+        header={
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex items-center gap-3">
             <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F94B35] text-white shadow-lg ${open ? "animate-pulse" : ""}`}>
               <Siren className="h-6 w-6" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-[#F94B35]">{data ? `${humanize(data.severity)} severity ${humanize(data.type)}` : "Incident"}</span>
+                <span className="text-xs font-black uppercase tracking-wider text-[#D93320] dark:text-[#FF7361]">{data ? `${humanize(data.severity)} severity ${humanize(data.type)}` : "Incident"}</span>
                 {data && (
                   <Badge variant={open ? "coral" : "teal"} size="sm" pulse={data.status === "ACTIVE"}>
                     {data.status.replace(/_/g, " ")}
@@ -177,15 +187,71 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
                     : `Closed${data.outcomeCode ? `: ${humanize(data.outcomeCode)}` : ""}`}
               </Badge>
             ) : null}
-
-            <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-200 dark:hover:bg-[#28162E]" aria-label="Close">
-              <X className="h-6 w-6" />
-            </button>
           </div>
-        </div>
+          </div>
+        }
+        footer={
+          data ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            {open ? (
+              <>
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+                  {data.status === "ACTIVE" && (
+                    <button
+                      onClick={onAck}
+                      disabled={busy}
+                      className="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-[#14755F] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#0E3D32] disabled:opacity-50 sm:col-span-1"
+                    >
+                      {ack.pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+                      Acknowledge Incident{data.type === "SOS" ? " (Stop SLA Timer)" : ""}
+                    </button>
+                  )}
+                  <select value={effectiveAssignee} onChange={(e) => setAssignee(e.target.value)} className="min-w-0 rounded-xl border border-slate-300 px-2.5 py-2.5 text-xs dark:border-[#331A3B] dark:bg-[#211226] dark:text-white" aria-label="Assign to">
+                    {staff.options.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.id === staff.meId ? `${s.name} (me)` : s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={onAssign}
+                    disabled={busy || !effectiveAssignee || effectiveAssignee === data.assignedStaffId}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-[#28162E]"
+                  >
+                    {assign.pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {data.assignedStaffId ? "Reassign" : "Assign"}
+                  </button>
+                  <button
+                    onClick={() => setClosing("escalate")}
+                    disabled={busy}
+                    className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-[#FFC4BC] px-3 py-2.5 text-xs font-bold text-[#B02414] hover:bg-[#FFF3F1] disabled:opacity-50 dark:border-[#61130A] dark:text-[#FFA093] dark:hover:bg-[#38110D] sm:col-span-1"
+                  >
+                    <ArrowUpCircle className="h-4 w-4" /> Escalate
+                  </button>
+                </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
+                  <button
+                    onClick={() => setClosing("false_alarm")}
+                    disabled={busy}
+                    className="rounded-xl border border-slate-300 px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-[#28162E] sm:px-4"
+                  >
+                    Mark False Alarm
+                  </button>
+                  <button onClick={() => setClosing("resolve")} disabled={busy} className="rounded-xl bg-[#3A102F] px-3 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#521A44] disabled:opacity-50 dark:bg-[#7A2B66] dark:hover:bg-[#A74490] sm:px-5">
+                    <span className="sm:hidden">Resolve</span>
+                    <span className="hidden sm:inline">Close & Resolve Incident</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                This incident is closed{data.resolvedAt ? ` (${formatDateTime(data.resolvedAt)})` : ""}. Notes can still be added for post-incident review.
+              </p>
+            )}
+            </div>
+          ) : undefined
+        }
+      >
           {detail.error && <ErrorBanner error={detail.error} title="Could not load this incident" onRetry={detail.refetch} />}
           {detail.initialLoading && (
             <div className="space-y-3">
@@ -216,7 +282,7 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
                       {incident.userPhone}
                     </a>
                   ) : (
-                    <p className="text-xs text-slate-400">Phone unavailable</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Phone unavailable</p>
                   )}
                 </Card>
 
@@ -225,22 +291,22 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
                     <Gauge className="h-4 w-4 text-[#7A2B66]" />
                     <span className="text-sm font-bold font-mono text-slate-900 dark:text-white">{incident.speedMph !== undefined ? `${incident.speedMph} mph` : "Unknown"}</span>
                   </div>
-                  <p className="text-[11px] text-slate-400">{incident.speedMph !== undefined ? "Captain's last reported speed" : "No speed reading captured"}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{incident.speedMph !== undefined ? "Captain's last reported speed" : "No speed reading captured"}</p>
                 </Card>
 
                 <Card label="Device Battery">
                   <div className="flex items-center gap-1.5">
-                    <Battery className="h-4 w-4 text-emerald-600" />
+                    <Battery className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                     <span className="text-sm font-bold font-mono text-slate-900 dark:text-white">{incident.battery !== null ? `${incident.battery}%` : "Unknown"}</span>
                   </div>
-                  <p className="text-[11px] text-slate-400">{incident.battery !== null && incident.battery <= 15 ? "Battery critically low" : "Reported by the app at trigger time"}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{incident.battery !== null && incident.battery <= 15 ? "Battery critically low" : "Reported by the app at trigger time"}</p>
                 </Card>
 
                 <Card label={data.liveLocation ? "Captain Live GPS" : "Trigger Location"}>
                   {data.liveLocation || incident.hasCoords ? (
                     <>
                       <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4 text-[#F94B35]" />
+                        <MapPin className="h-4 w-4 text-[#D93320] dark:text-[#FF7361]" />
                         <span className="text-xs font-mono font-bold text-slate-900 dark:text-white">
                           {(data.liveLocation?.lat ?? incident.coords[0]).toFixed(5)}, {(data.liveLocation?.lng ?? incident.coords[1]).toFixed(5)}
                         </span>
@@ -255,7 +321,7 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
                       </a>
                     </>
                   ) : (
-                    <p className="text-xs text-slate-400">No location captured</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">No location captured</p>
                   )}
                 </Card>
               </div>
@@ -263,33 +329,33 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
               {/* Ride & participants */}
               {snap?.ride && (
                 <div className="rounded-2xl border border-slate-200 dark:border-[#331A3B] p-4 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
                     <Car className="h-3.5 w-3.5" /> Linked Trip {snap.ride.bookingRef} ({humanize(snap.ride.status)})
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
-                      <span className="text-slate-400">Pickup</span>
+                      <span className="text-slate-500 dark:text-slate-400">Pickup</span>
                       <p className="font-semibold text-slate-800 dark:text-slate-200">{snap.ride.pickup?.address ?? "—"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Drop-off</span>
+                      <span className="text-slate-500 dark:text-slate-400">Drop-off</span>
                       <p className="font-semibold text-slate-800 dark:text-slate-200">{snap.ride.drop?.address ?? "—"}</p>
                     </div>
                     <div>
-                      <span className="text-slate-400">Rider</span>
+                      <span className="text-slate-500 dark:text-slate-400">Rider</span>
                       <p className="font-semibold text-slate-800 dark:text-slate-200">
-                        {snap.rider?.name ?? "—"} {snap.rider && <span className="text-slate-400">★ {snap.rider.ratingAvg.toFixed(2)}</span>}
+                        {snap.rider?.name ?? "—"} {snap.rider && <span className="text-slate-500 dark:text-slate-400">★ {snap.rider.ratingAvg.toFixed(2)}</span>}
                       </p>
                       <PhoneLink phone={data.contacts.triggeredBy?.realm === "RIDER" ? data.contacts.triggeredBy.phone : data.contacts.counterparty?.realm === "RIDER" ? data.contacts.counterparty.phone : snap.rider?.phone} />
                     </div>
                     <div>
-                      <span className="text-slate-400">Captain</span>
+                      <span className="text-slate-500 dark:text-slate-400">Captain</span>
                       <p className="font-semibold text-slate-800 dark:text-slate-200">
-                        {snap.captain?.name ?? "Not assigned"} {snap.captain && <span className="text-slate-400">★ {snap.captain.ratingAvg.toFixed(2)} • {snap.captain.totalRides} rides</span>}
+                        {snap.captain?.name ?? "Not assigned"} {snap.captain && <span className="text-slate-500 dark:text-slate-400">★ {snap.captain.ratingAvg.toFixed(2)} • {snap.captain.totalRides} rides</span>}
                       </p>
                       <PhoneLink phone={data.contacts.triggeredBy?.realm === "CAPTAIN" ? data.contacts.triggeredBy.phone : data.contacts.counterparty?.realm === "CAPTAIN" ? data.contacts.counterparty.phone : snap.captain?.phone} />
                       {snap.vehicle && (
-                        <p className="text-slate-500">
+                        <p className="text-slate-500 dark:text-slate-400">
                           {[snap.vehicle.color, snap.vehicle.make, snap.vehicle.model].filter(Boolean).join(" ")} {snap.vehicle.plateNumber ? `• ${snap.vehicle.plateNumber}` : ""}
                         </p>
                       )}
@@ -301,7 +367,7 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
               {/* Location trail */}
               {(trail.length > 1 || snap?.captainLastLocation) && (
                 <div className="rounded-2xl border border-slate-200 dark:border-[#331A3B] p-4 space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Location Trail (last 5 minutes before trigger, {trail.length} points)</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Location Trail (last 5 minutes before trigger, {trail.length} points)</h4>
                   <TrailPlot trail={trail} sos={incident.hasCoords ? { lat: incident.coords[0], lng: incident.coords[1] } : null} last={snap?.captainLastLocation ?? null} />
                 </div>
               )}
@@ -365,17 +431,17 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
                     onChange={(e) => setContactNote(e.target.value)}
                     className="w-full rounded-xl border border-slate-300 dark:border-[#331A3B] px-3 py-2 text-xs dark:bg-[#211226] dark:text-white"
                   />
-                  <p className="text-[11px] text-slate-500">The first logged contact stops the first-contact SLA clock. Calls are placed with your own phone; this records them.</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">The first logged contact stops the first-contact SLA clock. Calls are placed with your own phone; this records them.</p>
                 </div>
               )}
 
               {/* Timeline */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
                   <ClipboardList className="h-3.5 w-3.5" /> Incident Timeline & Notes ({data.events.length})
                 </h4>
                 <div className="rounded-2xl border border-slate-200 dark:border-[#331A3B] p-4 bg-slate-50/50 dark:bg-[#211226]/30 space-y-2.5 max-h-56 overflow-y-auto">
-                  {data.events.length === 0 && <p className="text-xs text-slate-400">No events yet.</p>}
+                  {data.events.length === 0 && <p className="text-xs text-slate-500 dark:text-slate-400">No events yet.</p>}
                   {[...data.events].reverse().map((e) => (
                     <EventRow key={e.id} event={e} actor={actorLabel(e, staff.nameOf)} />
                   ))}
@@ -404,68 +470,7 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
               {actionError && <ErrorBanner error={actionError} title="Action failed" />}
             </>
           )}
-        </div>
-
-        {/* Footer Actions */}
-        {data && (
-          <div className="border-t border-[#F0E3ED] dark:border-[#331A3B] px-6 py-4 bg-white dark:bg-[#180D1C] flex flex-wrap items-center justify-between gap-4">
-            {open ? (
-              <>
-                <div className="flex flex-wrap items-center gap-2">
-                  {data.status === "ACTIVE" && (
-                    <button
-                      onClick={onAck}
-                      disabled={busy}
-                      className="rounded-xl bg-[#189578] hover:bg-[#14755F] px-5 py-2.5 text-xs font-bold text-white shadow-md flex items-center gap-2 disabled:opacity-50"
-                    >
-                      {ack.pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                      Acknowledge Incident{data.type === "SOS" ? " (Stop SLA Timer)" : ""}
-                    </button>
-                  )}
-                  <select value={effectiveAssignee} onChange={(e) => setAssignee(e.target.value)} className="rounded-xl border border-slate-300 dark:border-[#331A3B] px-2.5 py-2.5 text-xs dark:bg-[#211226] dark:text-white" aria-label="Assign to">
-                    {staff.options.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.id === staff.meId ? `${s.name} (me)` : s.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={onAssign}
-                    disabled={busy || !effectiveAssignee || effectiveAssignee === data.assignedStaffId}
-                    className="rounded-xl border border-slate-300 dark:border-slate-700 px-3 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#28162E] disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {assign.pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {data.assignedStaffId ? "Reassign" : "Assign"}
-                  </button>
-                  <button
-                    onClick={() => setClosing("escalate")}
-                    disabled={busy}
-                    className="rounded-xl border border-[#FFC4BC] dark:border-[#61130A] px-3 py-2.5 text-xs font-bold text-[#B02414] dark:text-[#FFA093] hover:bg-[#FFF3F1] dark:hover:bg-[#38110D] disabled:opacity-50 flex items-center gap-2"
-                  >
-                    <ArrowUpCircle className="h-4 w-4" /> Escalate
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setClosing("false_alarm")}
-                    disabled={busy}
-                    className="rounded-xl border border-slate-300 dark:border-slate-700 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#28162E] disabled:opacity-50"
-                  >
-                    Mark False Alarm
-                  </button>
-                  <button onClick={() => setClosing("resolve")} disabled={busy} className="rounded-xl bg-[#3A102F] hover:bg-[#521A44] px-5 py-2.5 text-xs font-bold text-white shadow-md disabled:opacity-50">
-                    Close & Resolve Incident
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="text-xs text-slate-500">
-                This incident is closed{data.resolvedAt ? ` (${formatDateTime(data.resolvedAt)})` : ""}. Notes can still be added for post-incident review.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+      </Sheet>
 
       {closing && (
         <ConfirmDialog
@@ -501,7 +506,7 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
           )}
         </ConfirmDialog>
       )}
-    </div>
+    </>
   );
 };
 
@@ -509,7 +514,7 @@ const IncidentCommand: React.FC<{ incidentId: string; onClose: () => void }> = (
 
 const Card: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div className="rounded-2xl border border-slate-200 dark:border-[#331A3B] p-3 bg-slate-50 dark:bg-[#211226]/40 space-y-1">
-    <span className="text-[10px] font-bold uppercase text-slate-400">{label}</span>
+    <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">{label}</span>
     <div>{children}</div>
   </div>
 );
@@ -528,7 +533,7 @@ const QuickDial: React.FC<{ label: string; phone: string; onPick: () => void }> 
     className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] px-3 py-2 text-xs font-bold text-slate-800 dark:text-white hover:border-[#F94B35] transition-all flex items-center gap-2 shadow-sm"
     title={phone}
   >
-    <PhoneCall className="h-4 w-4 text-[#F94B35]" />
+    <PhoneCall className="h-4 w-4 text-[#D93320] dark:text-[#FF7361]" />
     {label}
   </a>
 );
@@ -549,9 +554,9 @@ function actorLabel(e: ApiIncidentEvent, nameOf: (id: string | null | undefined)
 const EventRow: React.FC<{ event: ApiIncidentEvent; actor: string }> = ({ event, actor }) => (
   <div className="text-xs text-slate-700 dark:text-slate-300">
     <div className="flex flex-wrap items-baseline gap-x-2">
-      <span className="font-mono text-[10px] text-slate-400">{formatTime(event.createdAt)}</span>
+      <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{formatTime(event.createdAt)}</span>
       <span className="font-bold text-slate-900 dark:text-white">{eventTitle(event)}</span>
-      <span className="text-slate-400">by {actor}</span>
+      <span className="text-slate-500 dark:text-slate-400">by {actor}</span>
     </div>
     {event.body && <p className="pl-1 text-slate-600 dark:text-slate-400 break-words">{event.body}</p>}
   </div>

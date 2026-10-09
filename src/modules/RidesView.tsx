@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Download, Eye, RefreshCw } from "lucide-react";
+import { Download, Eye, RefreshCw } from "lucide-react";
+import { ChipTabs, FilterRow, PageHeader, SearchInput, Toolbar, fieldClass } from "@/components/ui/Page";
 import { Badge } from "@/components/Badge";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { EmptyState, LoadMore } from "@/components/ui/EmptyState";
@@ -38,8 +39,7 @@ const endOfDayIso = (d: string): string | undefined => {
   return new Date(y, m - 1, day, 23, 59, 59, 999).toISOString();
 };
 
-const inputCls =
-  "rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none";
+const inputCls = `${fieldClass} font-semibold text-slate-700 dark:text-slate-200`;
 
 export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRide }) => {
   const { cityName } = useCities();
@@ -130,101 +130,75 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
-      {/* Title & Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Rides & Dispatch Operations</h1>
-          <p className="text-xs text-slate-500">Monitor ride state machines, dispatch offers, GPS routes, and fare audits</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={list.refetch}
-            disabled={list.loading}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#28162E] transition-colors shadow-xs disabled:opacity-60"
-          >
-            <RefreshCw className={`h-4 w-4 ${list.loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
-          <button
-            onClick={exportCSV}
-            disabled={rides.length === 0}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#28162E] transition-colors shadow-xs disabled:opacity-50"
-          >
-            <Download className="h-4 w-4" />
-            Export CSV
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Rides & Dispatch Operations"
+        description="Monitor ride state machines, dispatch offers, GPS routes, and fare audits"
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={list.refetch}
+              disabled={list.loading}
+              className="flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 disabled:opacity-60 dark:border-[#331A3B] dark:bg-[#180D1C] dark:text-slate-200 dark:hover:bg-[#28162E]"
+            >
+              <RefreshCw className={`h-4 w-4 ${list.loading ? "animate-spin" : ""}`} aria-hidden="true" />
+              Refresh
+            </button>
+            <button
+              type="button"
+              onClick={exportCSV}
+              disabled={rides.length === 0}
+              className="flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-[#331A3B] dark:bg-[#180D1C] dark:text-slate-200 dark:hover:bg-[#28162E]"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Export CSV
+            </button>
+          </>
+        }
+      />
 
       {/* Top Quick Metrics (computed over the rides currently loaded for the active filters) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 text-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Matching Rides</span>
-          <p className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{countLabel(rides.length)}</p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
+          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Matching Rides</span>
+          <p className="mt-0.5 text-lg font-black text-slate-900 dark:text-white">{countLabel(rides.length)}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 text-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Completed Trips</span>
-          <p className="text-lg font-black text-emerald-600 mt-0.5">{stats.completed}</p>
+        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
+          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Completed Trips</span>
+          <p className="mt-0.5 text-lg font-black text-emerald-700 dark:text-emerald-400">{stats.completed}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 text-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Active Now</span>
-          <p className="text-lg font-black text-[#7A2B66] dark:text-[#DB99CC] mt-0.5">{stats.active}</p>
+        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
+          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Active Now</span>
+          <p className="mt-0.5 text-lg font-black text-[#7A2B66] dark:text-[#DB99CC]">{stats.active}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 text-xs">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Cancellations</span>
-          <p className="text-lg font-black text-[#F94B35] mt-0.5">{stats.cancelled}</p>
+        <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
+          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Cancellations</span>
+          <p className="mt-0.5 text-lg font-black text-[#D93320] dark:text-[#FF7361]">{stats.cancelled}</p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="space-y-3 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Status Tabs */}
-          <div className="flex gap-1 overflow-x-auto text-xs pb-1 sm:pb-0">
-            {STATUS_TABS.map((st) => (
-              <button
-                key={st.id}
-                onClick={() => {
-                  setActiveTab(st.id);
-                  setExactStatus("ALL");
-                }}
-                className={`rounded-xl px-3 py-1.5 font-bold transition-all whitespace-nowrap ${
-                  activeTab === st.id && exactStatus === "ALL"
-                    ? "bg-[#3A102F] text-white dark:bg-[#7A2B66]"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#28162E]"
-                }`}
-              >
-                {st.label}
-              </button>
+      <Toolbar>
+        <ChipTabs
+          label="Ride status"
+          items={STATUS_TABS}
+          value={exactStatus === "ALL" ? activeTab : ""}
+          onChange={(id) => {
+            setActiveTab(id);
+            setExactStatus("ALL");
+          }}
+        />
+
+        <FilterRow>
+          <SearchInput value={searchInput} onValueChange={onSearch} placeholder="Search booking ref or ride ID..." className="min-[480px]:col-span-2 lg:w-72" />
+          <select value={serviceTypeFilter} onChange={(e) => setServiceTypeFilter(e.target.value)} className={`${inputCls} cursor-pointer`} aria-label="Service type">
+            <option value="ALL">All Services</option>
+            {serviceTypes.map((s) => (
+              <option key={s.code} value={s.code}>
+                {s.name}
+              </option>
             ))}
-          </div>
-
-          {/* Search & Service Select */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search booking ref or ride ID..."
-                value={searchInput}
-                onChange={(e) => onSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] pl-9 pr-3 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none"
-              />
-            </div>
-
-            <select value={serviceTypeFilter} onChange={(e) => setServiceTypeFilter(e.target.value)} className={`${inputCls} cursor-pointer`}>
-              <option value="ALL">All Services</option>
-              {serviceTypes.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+          </select>
           <select value={exactStatus} onChange={(e) => setExactStatus(e.target.value)} className={`${inputCls} cursor-pointer`} aria-label="Exact status">
             <option value="ALL">Any exact status</option>
             {ALL_API_RIDE_STATUSES.map((s) => (
@@ -233,20 +207,21 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
               </option>
             ))}
           </select>
-          <label className="flex items-center gap-1.5 text-slate-500">
-            From
+          <label className="flex min-w-0 items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+            <span className="w-9 shrink-0 lg:w-auto">From</span>
             <input type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} className={inputCls} />
           </label>
-          <label className="flex items-center gap-1.5 text-slate-500">
-            To
+          <label className="flex min-w-0 items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+            <span className="w-9 shrink-0 lg:w-auto">To</span>
             <input type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} className={inputCls} />
           </label>
-          <label className="flex items-center gap-1.5 font-semibold text-slate-600 dark:text-slate-300 cursor-pointer">
+          <label className="flex min-h-10 cursor-pointer items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
             <input type="checkbox" checked={sosOnly} onChange={(e) => setSosOnly(e.target.checked)} className="accent-[#F94B35]" />
             SOS rides only
           </label>
           {(fromDate || toDate || sosOnly || exactStatus !== "ALL" || q || serviceTypeFilter !== "ALL" || activeTab !== "ALL") && (
             <button
+              type="button"
               onClick={() => {
                 setActiveTab("ALL");
                 setExactStatus("ALL");
@@ -257,13 +232,13 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
                 setToDate("");
                 setSosOnly(false);
               }}
-              className="ml-auto text-[11px] font-bold text-[#7A2B66] dark:text-[#DB99CC] hover:underline"
+              className="min-h-10 text-left text-[11px] font-bold text-[#7A2B66] hover:underline dark:text-[#DB99CC] lg:ml-auto"
             >
               Clear filters
             </button>
           )}
-        </div>
-      </div>
+        </FilterRow>
+      </Toolbar>
 
       {list.error && <ErrorBanner error={list.error} title="Could not load rides" onRetry={list.refetch} />}
 
@@ -272,10 +247,10 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
         {list.initialLoading ? (
           <TableSkeleton rows={8} cols={8} />
         ) : (
-          <div className="data-table-container">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="data-table-container sticky-first">
+            <table className="w-full min-w-[68rem] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                   <th className="py-3.5 px-4">Booking Code</th>
                   <th className="py-3.5 px-4">City / Service</th>
                   <th className="py-3.5 px-4">Passenger</th>
@@ -301,15 +276,15 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-1.5">
                           <span className="font-mono font-bold text-slate-900 dark:text-white">{ride.bookingCode}</span>
-                          {ride.hasSOSAlert && <span className="text-[10px] text-rose-500 font-black animate-pulse">SOS</span>}
+                          {ride.hasSOSAlert && <span className="text-[10px] text-rose-600 dark:text-rose-400 font-black animate-pulse">SOS</span>}
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono">{ride.id.slice(0, 8)}</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{ride.id.slice(0, 8)}</span>
                       </td>
 
                       {/* City / Service */}
                       <td className="py-3 px-4">
                         <span className="font-semibold text-slate-800 dark:text-slate-200">{ride.city}</span>
-                        <p className="text-[11px] text-slate-400">{ride.serviceTypeName}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ride.serviceTypeName}</p>
                       </td>
 
                       {/* Rider */}
@@ -319,7 +294,7 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
                           <img src={ride.rider.avatar} alt={ride.rider.name} className="h-6 w-6 rounded-full object-cover" />
                           <div>
                             <p className="font-semibold text-slate-800 dark:text-slate-200">{ride.rider.name}</p>
-                            {ride.rider.rating > 0 && <p className="text-[10px] text-amber-500 font-bold">★ {ride.rider.rating.toFixed(1)}</p>}
+                            {ride.rider.rating > 0 && <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">★ {ride.rider.rating.toFixed(1)}</p>}
                           </div>
                         </div>
                       </td>
@@ -336,7 +311,7 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
                             </div>
                           </div>
                         ) : (
-                          <span className="text-slate-400 italic">{ride.status === "SEARCHING" ? "Matching..." : "None"}</span>
+                          <span className="text-slate-500 dark:text-slate-400 italic">{ride.status === "SEARCHING" ? "Matching..." : "None"}</span>
                         )}
                       </td>
 
@@ -348,19 +323,19 @@ export const RidesView: React.FC<RidesViewProps> = ({ selectedCityId, onSelectRi
                       </td>
 
                       {/* Requested */}
-                      <td className="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">{formatDateTime(ride.requestedAt)}</td>
+                      <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateTime(ride.requestedAt)}</td>
 
                       {/* Fare */}
                       <td className="py-3 px-4 text-right font-mono font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         {formatMoney(ride.finalFareMinor ?? ride.estimatedFareMinor, ride.currency)}
-                        {ride.finalFareMinor === null && <p className="text-[10px] font-normal text-slate-400">estimate</p>}
+                        {ride.finalFareMinor === null && <p className="text-[10px] font-normal text-slate-500 dark:text-slate-400">estimate</p>}
                       </td>
 
                       {/* Payment */}
                       <td className="py-3 px-4">
                         <span className="text-slate-600 dark:text-slate-300">{humanize(ride.paymentMethodRaw)}</span>
                         {ride.paymentStatusRaw && (
-                          <p className="text-[10px] text-slate-400">{humanize(ride.paymentStatusRaw)}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{humanize(ride.paymentStatusRaw)}</p>
                         )}
                       </td>
 

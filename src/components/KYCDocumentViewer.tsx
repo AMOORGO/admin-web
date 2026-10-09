@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  X,
   CheckCircle,
   XCircle,
   RotateCcw,
@@ -22,6 +21,7 @@ import { Badge } from "./Badge";
 import { Can } from "./Can";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ErrorBanner } from "./ui/ErrorBanner";
+import { Sheet } from "./ui/Sheet";
 import { Skeleton } from "./ui/Skeleton";
 import { useToast } from "./ui/Toast";
 import { api, errorMessage } from "@/lib/api";
@@ -107,14 +107,6 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [ticking]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !dialog) onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [dialog, onClose]);
 
   const docs = useMemo(() => captain?.documents ?? [], [captain]);
   /** Latest version per (type, vehicle); the API returns type asc, version desc. */
@@ -309,14 +301,17 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
   const inReview = !!captain && REVIEWABLE_APPLICATION.includes(captain.status);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div
-        className="w-full max-w-6xl h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-[#180D1C] border border-[#F0E3ED] dark:border-[#331A3B] shadow-2xl overflow-hidden"
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-[#F0E3ED] dark:border-[#331A3B] px-6 py-4 bg-[#FAF0F7]/40 dark:bg-[#211226]/50">
+    <>
+      <Sheet
+        open
+        onClose={onClose}
+        variant="center"
+        fill
+        widthClass="sm:max-w-6xl"
+        headerClassName="bg-[#FAF0F7]/40 dark:bg-[#211226]/50"
+        bodyClassName="p-0 lg:overflow-hidden"
+        header={
+          <>
           {captain && status ? (
             <div className="flex items-center gap-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -336,7 +331,7 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Phone: {captain.phone} • Email: {captain.email ?? "—"} • Applied: {displayDate(captain.submittedAt ?? captain.joinedAt)}
                 </p>
               </div>
@@ -350,12 +345,59 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
               </div>
             </div>
           )}
+          </>
+        }
+        footer={
+          captain ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="hidden items-center gap-2 text-xs text-slate-600 dark:text-slate-300 sm:flex">
+                <ShieldCheck className="h-4 w-4 text-[#14755F] dark:text-[#4FD2B2]" />
+                <span>
+                  {inReview
+                    ? "Verify every required document, then approve, reject or send the application back."
+                    : `Application status: ${status ? captainStatusLabel(status) : ""}.`}
+                </span>
+              </div>
 
-          <button onClick={onClose} aria-label="Close" className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-[#28162E] dark:hover:text-white">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+                {(inReview || captain.status === "APPROVED") && (
+                  <Can permission="captains.approve">
+                    <button
+                      onClick={() => openDialog({ kind: "resubmit" })}
+                      className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-3 py-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-100 transition-all flex items-center justify-center gap-2 sm:px-4"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Request Resubmission
+                    </button>
+                  </Can>
+                )}
+                {inReview && (
+                  <>
+                    <Can permission="captains.approve">
+                      <button
+                        onClick={() => openDialog({ kind: "reject" })}
+                        className="rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-3 py-2.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition-all flex items-center justify-center gap-2 sm:px-5"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Reject Application
+                      </button>
+                    </Can>
+                    <Can permission="captains.approve">
+                      <button
+                        onClick={() => openDialog({ kind: "approve" })}
+                        className="rounded-xl bg-[#14755F] hover:bg-[#0E3D32] px-6 py-2.5 text-xs font-bold text-white shadow-md transition-all flex items-center justify-center gap-2 max-sm:col-span-2"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Approve &amp; Activate Captain
+                      </button>
+                    </Can>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : undefined
+        }
+      >
         {detailQuery.error && !captain && (
           <div className="p-6">
             <ErrorBanner error={detailQuery.error} title="Could not load the captain" onRetry={detailQuery.refetch} />
@@ -370,17 +412,10 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
         )}
 
         {captain && (
-          <>
-            {detailQuery.error && (
-              <div className="px-6 pt-3">
-                <ErrorBanner error={detailQuery.error} title="Could not refresh the captain" onRetry={detailQuery.refetch} />
-              </div>
-            )}
-
-            {/* Main Split Screen Area */}
-            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          <div className="flex min-h-full flex-col lg:h-full lg:min-h-0 lg:flex-row">
               {/* Left Column: Documents Selector & Applicant Meta */}
-              <div className="w-full lg:w-96 shrink-0 border-b lg:border-b-0 lg:border-r border-[#F0E3ED] dark:border-[#331A3B] flex flex-col overflow-y-auto bg-slate-50/50 dark:bg-[#211226]/30 p-5 space-y-5 max-h-[40vh] lg:max-h-none">
+              <div className="flex w-full shrink-0 flex-col space-y-5 border-b border-[#F0E3ED] bg-slate-50/50 p-4 dark:border-[#331A3B] dark:bg-[#211226]/30 sm:p-5 lg:w-96 lg:overflow-y-auto lg:overscroll-contain lg:border-b-0 lg:border-r">
+                {detailQuery.error && <ErrorBanner error={detailQuery.error} title="Could not refresh the captain" onRetry={detailQuery.refetch} />}
                 {captain.statusReason && (
                   <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs text-amber-900 dark:text-amber-200">
                     <strong>Last status note:</strong> {captain.statusReason}
@@ -389,11 +424,11 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
 
                 {/* Vehicles */}
                 <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-4 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     <Car className="h-4 w-4 text-[#7A2B66] dark:text-[#DB99CC]" />
                     Registered Vehicles ({captain.vehicles.length})
                   </div>
-                  {captain.vehicles.length === 0 && <p className="text-xs text-slate-400">No vehicle registered yet.</p>}
+                  {captain.vehicles.length === 0 && <p className="text-xs text-slate-500 dark:text-slate-400">No vehicle registered yet.</p>}
                   {captain.vehicles.map((v) => (
                     <div key={v.id} className="text-xs space-y-1 border-t first:border-t-0 border-slate-100 dark:border-[#331A3B] pt-2 first:pt-0">
                       <div className="flex items-start justify-between gap-2">
@@ -411,14 +446,14 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                           </Badge>
                         </div>
                       </div>
-                      <div className="flex justify-between text-slate-500">
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400">
                         <span>Plate Number:</span>
                         <span className="font-mono font-bold text-[#7A2B66] dark:text-[#DB99CC]">
                           {v.plateNumber}
                           {v.plateState ? ` (${v.plateState})` : ""}
                         </span>
                       </div>
-                      <div className="flex justify-between text-slate-500">
+                      <div className="flex justify-between text-slate-500 dark:text-slate-400">
                         <span>Color / Fuel:</span>
                         <span>
                           {v.color} • {v.isElectric ? "Electric (EV)" : "Gas / Hybrid"} • {v.seats} seats
@@ -458,8 +493,8 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
 
                 {/* Document List */}
                 <div className="space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Submitted Verification Documents ({currentDocs.length})</span>
-                  {currentDocs.length === 0 && <p className="text-xs text-slate-400">No documents uploaded yet.</p>}
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Submitted Verification Documents ({currentDocs.length})</span>
+                  {currentDocs.length === 0 && <p className="text-xs text-slate-500 dark:text-slate-400">No documents uploaded yet.</p>}
                   <div className="space-y-2">
                     {[...currentDocs, ...(showOld ? olderDocs : [])].map((doc) => {
                       const isSelected = selectedDocId === doc.id;
@@ -478,10 +513,10 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                             <div className="flex items-center gap-2">
                               <FileText className={`h-4 w-4 ${isSelected ? "text-[#7A2B66] dark:text-[#E9BFDF]" : "text-slate-400"}`} />
                               <span className="font-bold text-slate-800 dark:text-slate-100">{doc.label}</span>
-                              <span className="text-[10px] text-slate-400">v{doc.version}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">v{doc.version}</span>
                             </div>
-                            <p className="text-[11px] font-mono text-slate-500">Doc #: {doc.documentNumber ?? "—"}</p>
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400">Doc #: {doc.documentNumber ?? "—"}</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400">
                               Uploaded {displayDate(doc.uploadedAt)} • Expires: {displayDate(doc.expiryDate)}
                             </p>
                             {doc.rejectionReason && <p className="text-[10px] text-amber-700 dark:text-amber-300">Note: {doc.rejectionReason}</p>}
@@ -498,14 +533,14 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                       {showOld ? "Hide" : "Show"} older versions ({olderDocs.length})
                     </button>
                   )}
-                  <p className="text-[10px] text-slate-400">Opening a document is recorded in the audit log.</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Opening a document is recorded in the audit log.</p>
                 </div>
 
                 {/* Compliance checklist */}
                 {captain.documentChecklist.length > 0 && (
                   <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-4 space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Required documents</span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Required documents</span>
                       <Badge variant={captain.eligibility.eligible ? "teal" : "warning"} size="sm">
                         {captain.eligibility.eligible ? "Eligible to drive" : "Not eligible yet"}
                       </Badge>
@@ -524,7 +559,7 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                 {/* Second Chance context (the backend has no admin enrol path: drivers apply from the app) */}
                 {captain.isSecondChance && (
                   <div className="rounded-xl border border-rose-200 dark:border-rose-950/60 bg-[#FFF3F1] dark:bg-[#38110D]/40 p-4 space-y-2">
-                    <div className="flex items-center gap-2 text-[#F94B35] font-bold text-xs">
+                    <div className="flex items-center gap-2 text-[#D93320] dark:text-[#FF7361] font-bold text-xs">
                       <Heart className="h-4 w-4 fill-current" />
                       AmoorGo Second Chance applicant
                     </div>
@@ -540,14 +575,14 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
               </div>
 
               {/* Right Column: Document Preview & Inspection */}
-              <div className="flex-1 min-h-[40vh] flex flex-col bg-slate-100 dark:bg-[#100713] overflow-hidden">
+              <div className="flex min-h-[60dvh] min-w-0 flex-1 flex-col overflow-hidden bg-slate-100 dark:bg-[#100713] lg:min-h-0">
                 {selectedDoc && (
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-[#331A3B] px-5 py-3 bg-white dark:bg-[#180D1C]">
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-xs font-bold text-slate-800 dark:text-white truncate">
-                        {selectedDoc.label} <span className="text-slate-400 font-normal">v{selectedDoc.version}</span>
+                        {selectedDoc.label} <span className="text-slate-500 dark:text-slate-400 font-normal">v{selectedDoc.version}</span>
                       </span>
-                      <span className="text-xs font-mono text-slate-400">
+                      <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
                         ID: {currentPreview?.phase === "ready" && currentPreview.documentNumber ? currentPreview.documentNumber : (selectedDoc.documentNumber ?? "—")}
                       </span>
                       <Badge variant={documentStatusVariant(selectedDoc.status)} size="sm">
@@ -604,7 +639,7 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                 {/* Document Canvas */}
                 <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
                   {!selectedDoc ? (
-                    <div className="text-center text-slate-400 text-sm space-y-2">
+                    <div className="text-center text-slate-500 dark:text-slate-400 text-sm space-y-2">
                       <Eye className="h-8 w-8 mx-auto opacity-60" />
                       <p>Select a document on the left to open it.</p>
                       <p className="text-xs">Each time a document is opened the view is written to the audit log.</p>
@@ -621,58 +656,9 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Global Review Actions Footer */}
-            <div className="border-t border-[#F0E3ED] dark:border-[#331A3B] px-6 py-4 bg-white dark:bg-[#180D1C] flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2 text-xs text-slate-500">
-                <ShieldCheck className="h-4 w-4 text-[#189578]" />
-                <span>
-                  {inReview
-                    ? "Verify every required document, then approve, reject or send the application back."
-                    : `Application status: ${status ? captainStatusLabel(status) : ""}.`}
-                </span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                {(inReview || captain.status === "APPROVED") && (
-                  <Can permission="captains.approve">
-                    <button
-                      onClick={() => openDialog({ kind: "resubmit" })}
-                      className="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 px-4 py-2.5 text-xs font-bold text-amber-800 dark:text-amber-300 hover:bg-amber-100 transition-all flex items-center gap-2"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      Request Resubmission
-                    </button>
-                  </Can>
-                )}
-                {inReview && (
-                  <>
-                    <Can permission="captains.approve">
-                      <button
-                        onClick={() => openDialog({ kind: "reject" })}
-                        className="rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-5 py-2.5 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-100 transition-all flex items-center gap-2"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Reject Application
-                      </button>
-                    </Can>
-                    <Can permission="captains.approve">
-                      <button
-                        onClick={() => openDialog({ kind: "approve" })}
-                        className="rounded-xl bg-[#189578] hover:bg-[#14755F] px-6 py-2.5 text-xs font-bold text-white shadow-md transition-all flex items-center gap-2"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        Approve &amp; Activate Captain
-                      </button>
-                    </Can>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
+          </div>
         )}
-      </div>
+      </Sheet>
 
       {captain && dialog && dialogConfig && (
         <ConfirmDialog
@@ -744,7 +730,7 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
                 Documents to re-upload{captain.status === "APPROVED" ? " (required)" : " (optional)"}
               </p>
               <div className="max-h-36 overflow-y-auto rounded-xl border border-slate-200 dark:border-[#331A3B] divide-y divide-slate-100 dark:divide-[#331A3B]">
-                {currentDocs.length === 0 && <p className="p-3 text-xs text-slate-400">No documents uploaded.</p>}
+                {currentDocs.length === 0 && <p className="p-3 text-xs text-slate-500 dark:text-slate-400">No documents uploaded.</p>}
                 {currentDocs.map((d) => (
                   <label key={d.id} className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-200">
                     <input
@@ -764,7 +750,7 @@ const ViewerInner: React.FC<{ captainId: string; onClose: () => void }> = ({ cap
           )}
         </ConfirmDialog>
       )}
-    </div>
+    </>
   );
 };
 
@@ -779,7 +765,7 @@ const DocumentCanvas: React.FC<{
 }> = ({ doc, preview, now, zoom, onReload, onRenderFailed }) => {
   if (!preview || preview.phase === "loading") {
     return (
-      <div className="flex flex-col items-center gap-2 text-slate-400 text-sm" role="status">
+      <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-slate-400 text-sm" role="status">
         <Loader2 className="h-6 w-6 animate-spin" />
         Requesting secure link…
       </div>
@@ -805,9 +791,9 @@ const DocumentCanvas: React.FC<{
   if (expired) {
     return (
       <div className="max-w-md space-y-3 text-center text-sm text-slate-600 dark:text-slate-300">
-        <AlertTriangle className="h-8 w-8 mx-auto text-amber-500" />
+        <AlertTriangle className="h-8 w-8 mx-auto text-amber-700 dark:text-amber-400" />
         <p className="font-bold">The secure link has expired.</p>
-        <p className="text-xs text-slate-500">Links are short-lived. Requesting a new one is recorded in the audit log again.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Links are short-lived. Requesting a new one is recorded in the audit log again.</p>
         <button onClick={onReload} className="inline-flex items-center gap-1.5 rounded-lg bg-[#3A102F] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#521A44]">
           <RefreshCw className="h-3.5 w-3.5" /> Reload document
         </button>
@@ -820,7 +806,7 @@ const DocumentCanvas: React.FC<{
     <div className="flex w-full h-full flex-col items-center justify-center gap-3">
       {failed ? (
         <div className="max-w-lg space-y-3 rounded-xl border border-slate-300 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-5 text-center text-xs text-slate-600 dark:text-slate-300">
-          <AlertTriangle className="h-7 w-7 mx-auto text-amber-500" />
+          <AlertTriangle className="h-7 w-7 mx-auto text-amber-700 dark:text-amber-400" />
           <p className="font-bold text-sm">{kind === "other" ? "This file type cannot be previewed in the browser." : "The document could not be loaded."}</p>
           {kind !== "other" && <p>The document storage may be unreachable from this browser, or the link has expired. You can retry or open the link directly.</p>}
           <input readOnly value={preview.url} onFocus={(e) => e.currentTarget.select()} className="w-full rounded-lg border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] p-2 font-mono text-[10px]" aria-label="Signed document URL" />
@@ -847,7 +833,7 @@ const DocumentCanvas: React.FC<{
         <iframe src={preview.url} title={doc.label} className="w-full flex-1 min-h-[420px] rounded-xl border border-slate-300 dark:border-slate-800 bg-white" />
       )}
       {!failed && (
-        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center justify-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
           <span>{meta}</span>
           <span>Link expires in {Math.floor(remaining / 60)}:{String(remaining % 60).padStart(2, "0")}</span>
           <a href={preview.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-bold text-[#7A2B66] dark:text-[#DB99CC] hover:underline">

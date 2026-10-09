@@ -134,9 +134,9 @@ const RuleEditor: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; bas
       )}
       <Can
         permission="config.edit"
-        fallback={<p className="text-[11px] text-slate-400">You can view pricing but not change it (requires config.edit).</p>}
+        fallback={<p className="text-[11px] text-slate-500 dark:text-slate-400">You can view pricing but not change it (requires config.edit).</p>}
       >
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">
           Rules are versioned: saving publishes a new version that applies immediately to new quotes; rides already priced keep the version they were quoted with.
         </p>
       </Can>
@@ -149,8 +149,8 @@ const RuleEditor: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; bas
           <NumField disabled={!canEdit} label="Booking Fee ($)" value={form.bookingFee} onChange={set("bookingFee")} step="0.05" hint="Service fee shown to the rider" />
           <NumField disabled={!canEdit} label="Waiting Rate ($ / minute)" value={form.waitingPerMinute} onChange={set("waitingPerMinute")} step="0.01" hint={`After ${form.waitingFreeMinutes} free minutes`} />
           <NumField disabled={!canEdit} label="Sales Tax (%)" value={form.taxPercent} onChange={set("taxPercent")} step="0.05" hint="Shown separately on the receipt" />
-          <NumField disabled={!canEdit} label="Platform Commission (%)" value={form.commissionPercent} onChange={set("commissionPercent")} step="0.5" hint="Platform take rate" tone="font-bold text-[#189578]" />
-          <NumField disabled={!canEdit} label="Maximum Surge Multiplier Cap (x)" value={form.surgeCap} onChange={set("surgeCap")} step="0.1" min="1" hint="Hard cap on any surge (1.0 - 10.0)" tone="font-bold text-[#F94B35]" />
+          <NumField disabled={!canEdit} label="Platform Commission (%)" value={form.commissionPercent} onChange={set("commissionPercent")} step="0.5" hint="Platform take rate" tone="font-bold text-[#14755F] dark:text-[#4FD2B2]" />
+          <NumField disabled={!canEdit} label="Maximum Surge Multiplier Cap (x)" value={form.surgeCap} onChange={set("surgeCap")} step="0.1" min="1" hint="Hard cap on any surge (1.0 - 10.0)" tone="font-bold text-[#D93320] dark:text-[#FF7361]" />
       </div>
 
       <div>
@@ -166,12 +166,12 @@ const RuleEditor: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; bas
             <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 dark:bg-[#211226] border border-slate-200 dark:border-[#331A3B] sm:col-span-2">
               <label className="font-bold text-slate-700 dark:text-slate-200">Effective From (optional)</label>
               <input type="datetime-local" disabled={!canEdit} value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} className={INPUT} />
-              <span className="text-[10px] text-slate-400">Empty = effective immediately. A later date schedules the version.</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">Empty = effective immediately. A later date schedules the version.</span>
             </div>
             <div className="space-y-1.5 p-3 rounded-2xl bg-slate-50 dark:bg-[#211226] border border-slate-200 dark:border-[#331A3B] sm:col-span-2">
               <label className="font-bold text-slate-700 dark:text-slate-200">Effective Until (optional)</label>
               <input type="datetime-local" disabled={!canEdit} value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} className={INPUT} />
-              <span className="text-[10px] text-slate-400">Afterwards the next-highest version applies again.</span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">Afterwards the next-highest version applies again.</span>
             </div>
           </div>
         )}
@@ -251,7 +251,7 @@ const FarePreview: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; fo
           {pending ? "Calculating…" : "Preview fare"}
         </button>
       </div>
-      {error && <p role="alert" className="text-xs font-medium text-[#F94B35] break-words">{error}</p>}
+      {error && <p role="alert" className="text-xs font-medium text-[#D93320] dark:text-[#FF7361] break-words">{error}</p>}
       {b && result && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           {[
@@ -267,12 +267,12 @@ const FarePreview: React.FC<{ city: ApiCityFull; serviceType: ApiServiceType; fo
             ["Captain earning", b.captainEarningMinor],
           ].map(([label, value]) => (
             <div key={String(label)} className="rounded-xl bg-white dark:bg-[#180D1C] border border-slate-100 dark:border-[#331A3B] p-2.5">
-              <span className="text-[10px] uppercase text-slate-400">{label}</span>
+              <span className="text-[10px] uppercase text-slate-500 dark:text-slate-400">{label}</span>
               <p className="font-mono font-bold text-slate-900 dark:text-white mt-0.5">{m(Number(value))}</p>
             </div>
           ))}
           <div className="rounded-xl bg-[#EFFCF9] dark:bg-[#0D2620] p-2.5">
-            <span className="text-[10px] uppercase text-slate-400">Rider total</span>
+            <span className="text-[10px] uppercase text-slate-500 dark:text-slate-400">Rider total</span>
             <p className="font-mono font-black text-[#14755F] dark:text-[#82E5CB] mt-0.5">{m(result.totalMinor)}</p>
           </div>
         </div>
@@ -312,10 +312,10 @@ const VersionHistory: React.FC<{ versions: ApiPricingRule[]; now: number; servic
       {versions.length === 0 ? (
         <EmptyState title="No versions yet" description="Publish the first version above." />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="data-table-container sticky-first">
+          <table className="w-full min-w-[45rem] text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                 <th className="py-2 px-3">Version</th>
                 <th className="py-2 px-3">Status</th>
                 <th className="py-2 px-3">Base / Distance / Time / Min</th>
@@ -341,7 +341,7 @@ const VersionHistory: React.FC<{ versions: ApiPricingRule[]; now: number; servic
                     <td className="py-2.5 px-3 font-mono text-slate-700 dark:text-slate-300">
                       {(r.commissionBps / 100).toFixed(1)}% / {(r.surgeCapBps / 10_000).toFixed(1)}x
                     </td>
-                    <td className="py-2.5 px-3 text-slate-500">
+                    <td className="py-2.5 px-3 text-slate-500 dark:text-slate-400">
                       {formatDateTime(r.effectiveFrom)}
                       {r.effectiveTo ? ` → ${formatDateTime(r.effectiveTo)}` : ""}
                     </td>

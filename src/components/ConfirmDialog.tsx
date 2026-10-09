@@ -87,7 +87,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className="flex items-center gap-3">
           <div
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-              isDestructive ? "bg-[#FFF3F1] text-[#F94B35] dark:bg-[#38110D]" : "bg-[#FAF0F7] text-[#7A2B66] dark:bg-[#331A3B] dark:text-[#E9BFDF]"
+              isDestructive ? "bg-[#FFF3F1] text-[#D93320] dark:bg-[#38110D]" : "bg-[#FAF0F7] text-[#7A2B66] dark:bg-[#331A3B] dark:text-[#E9BFDF]"
             }`}
           >
             <AlertTriangle className="h-5 w-5" aria-hidden="true" />
@@ -104,7 +104,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             type="button"
             onClick={handleClose}
             disabled={pending}
-            className="min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-[#28162E] sm:min-h-10"
+            className="min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-[#28162E] pointer-fine:min-h-10"
           >
             {cancelText}
           </button>
@@ -112,7 +112,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             type="button"
             onClick={handleConfirm}
             disabled={pending || confirmDisabled}
-            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-10 ${
+            className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60 pointer-fine:min-h-10 ${
               isDestructive ? "bg-[#D93320] hover:bg-[#B02414]" : "bg-[#3A102F] hover:bg-[#521A44] dark:bg-[#7A2B66] dark:hover:bg-[#A74490]"
             }`}
           >

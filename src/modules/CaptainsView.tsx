@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Search, Car, Heart, Eye } from "lucide-react";
+import { Car, Heart, Eye } from "lucide-react";
+import { ChipTabs, PageHeader, SearchInput, Toolbar } from "@/components/ui/Page";
 import { Badge } from "@/components/Badge";
 import { Can } from "@/components/Can";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -99,56 +100,28 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
-      {/* Title */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Captain Fleet Operations</h1>
-          <p className="text-xs text-slate-500">Monitor driver availability, vehicle compliance, ratings, and Second Chance status</p>
-        </div>
-
-        <Can permission="second_chance.manage">
-          <div className="flex items-center gap-2">
+      <PageHeader
+        title="Captain Fleet Operations"
+        description="Monitor driver availability, vehicle compliance, ratings, and Second Chance status"
+        actions={
+          <Can permission="second_chance.manage">
             <button
+              type="button"
               onClick={onNavigateToSecondChance}
-              className="flex items-center gap-1.5 rounded-xl border border-rose-300 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 px-3.5 py-2 text-xs font-bold text-[#F94B35] hover:bg-rose-100 transition-colors shadow-xs"
+              className="flex min-h-10 items-center gap-1.5 rounded-xl border border-rose-300 bg-rose-50 px-3.5 py-2 text-xs font-bold text-[#B02414] shadow-xs transition-colors hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950/40 dark:text-[#FF7361]"
             >
-              <Heart className="h-4 w-4 fill-current" />
+              <Heart className="h-4 w-4 fill-current" aria-hidden="true" />
               Second Chance Program{enrolled !== undefined ? ` (${enrolled})` : ""}
             </button>
-          </div>
-        </Can>
-      </div>
+          </Can>
+        }
+      />
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 shadow-xs">
-        <div className="flex gap-1 overflow-x-auto text-xs pb-1 sm:pb-0">
-          {FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilterKey(f.key)}
-              className={`rounded-xl px-3 py-1.5 font-bold transition-all whitespace-nowrap ${
-                filterKey === f.key
-                  ? "bg-[#3A102F] text-white dark:bg-[#7A2B66]"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#28162E]"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search captain, phone, email, plate..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            maxLength={100}
-            className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] pl-9 pr-3 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none"
-          />
-        </div>
-      </div>
+      <Toolbar className="lg:flex lg:items-center lg:justify-between lg:space-y-0">
+        <ChipTabs label="Captain status" items={FILTERS.map((f) => ({ id: f.key, label: f.label }))} value={filterKey} onChange={setFilterKey} />
+        <SearchInput value={searchTerm} onValueChange={setSearchTerm} placeholder="Search captain, phone, email, plate..." maxLength={100} className="lg:w-72" />
+      </Toolbar>
 
       {list.error && <ErrorBanner error={list.error} title="Could not load captains" onRetry={list.refetch} />}
 
@@ -166,52 +139,52 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
             return (
               <div
                 key={cap.id}
-                className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-5 shadow-xs space-y-4 hover:shadow-md transition-all flex flex-col justify-between"
+                className="flex min-w-0 flex-col justify-between space-y-4 rounded-2xl border border-[#F0E3ED] bg-white p-4 shadow-xs transition-shadow hover:shadow-md dark:border-[#331A3B] dark:bg-[#180D1C] sm:p-5"
               >
                 {/* Top Details */}
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={cap.avatar} alt={cap.name} className="h-12 w-12 rounded-full object-cover border-2 border-[#7A2B66]" />
-                      <div>
+                      <img src={cap.avatar} alt="" className="h-12 w-12 shrink-0 rounded-full border-2 border-[#7A2B66] object-cover" />
+                      <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-white">{cap.name}</h3>
+                          <h3 className="truncate text-sm font-bold text-slate-900 dark:text-white" title={cap.name}>{cap.name}</h3>
                           {cap.isSecondChance && (
                             <span title="Second Chance driver">
-                              <Heart className="h-3.5 w-3.5 text-[#F94B35] fill-current" />
+                              <Heart className="h-3.5 w-3.5 text-[#D93320] dark:text-[#FF7361] fill-current" />
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="truncate text-xs text-slate-600 dark:text-slate-300">
                           {cap.phone} • {cityLabel(cap.cityId, cap.cityText, cities)}
                         </p>
-                        <span className="text-[11px] text-amber-500 font-bold">
+                        <span className="text-[11px] text-amber-700 dark:text-amber-400 font-bold">
                           ★ {cap.ratingCount > 0 ? cap.rating.toFixed(2) : "New"} ({cap.totalTrips} trips)
                         </span>
                       </div>
                     </div>
 
-                    <Badge variant={captainStatusVariant(cap.status)} size="sm" dot>
+                    <Badge variant={captainStatusVariant(cap.status)} size="sm" dot className="shrink-0">
                       {captainStatusLabel(cap.status)}
                     </Badge>
                   </div>
 
                   {/* Vehicle Pill */}
                   <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] p-2.5 text-xs flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Car className="h-4 w-4 text-[#7A2B66] dark:text-[#DB99CC]" />
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Car className="h-4 w-4 shrink-0 text-[#7A2B66] dark:text-[#DB99CC]" />
                       {cap.vehicle ? (
-                        <div>
-                          <p className="font-semibold text-slate-800 dark:text-white">
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-slate-800 dark:text-white">
                             {cap.vehicle.make} {cap.vehicle.model}
                           </p>
-                          <p className="text-[10px] text-slate-400 font-mono">
+                          <p className="truncate font-mono text-[10px] text-slate-600 dark:text-slate-300">
                             {cap.vehicle.plateNumber} • {cap.vehicle.color}
                           </p>
                         </div>
                       ) : (
-                        <p className="text-slate-400">No vehicle registered</p>
+                        <p className="text-slate-500 dark:text-slate-400">No vehicle registered</p>
                       )}
                     </div>
                     {cap.vehicle?.isElectric && (
@@ -224,25 +197,25 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                   {/* Metric Strip */}
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
                     <div className="p-2 rounded-lg bg-[#FAF0F7]/50 dark:bg-[#331A3B]/30">
-                      <span className="text-[10px] text-slate-400">Acceptance</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Acceptance</span>
                       <p className="font-mono font-bold text-[#7A2B66] dark:text-[#DB99CC]">{cap.acceptanceRate}%</p>
                     </div>
                     <div className="p-2 rounded-lg bg-[#FAF0F7]/50 dark:bg-[#331A3B]/30">
-                      <span className="text-[10px] text-slate-400">Cancellation</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Cancellation</span>
                       <p className="font-mono font-bold text-slate-700 dark:text-slate-300">{cap.cancellationRate}%</p>
                     </div>
                     <div className="p-2 rounded-lg bg-[#FAF0F7]/50 dark:bg-[#331A3B]/30">
-                      <span className="text-[10px] text-slate-400">Trips</span>
-                      <p className="font-mono font-bold text-[#189578]">{cap.totalTrips}</p>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Trips</span>
+                      <p className="font-mono font-bold text-[#14755F] dark:text-[#4FD2B2]">{cap.totalTrips}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="pt-3 border-t border-slate-100 dark:border-[#331A3B] flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 dark:border-[#331A3B]">
                   <button
                     onClick={() => onOpenKYCViewer(cap.id)}
-                    className="rounded-xl border border-slate-200 dark:border-[#331A3B] px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#28162E] transition-colors flex items-center gap-1.5"
+                    className="flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#331A3B] dark:text-slate-200 dark:hover:bg-[#28162E]"
                   >
                     <Eye className="h-3.5 w-3.5" />
                     Profile &amp; Documents
@@ -252,10 +225,10 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                     <Can permission="captains.suspend">
                       <button
                         onClick={() => setTarget({ captain: cap, mode: isSuspended ? "reactivate" : "suspend" })}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
+                        className={`min-h-10 rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
                           isSuspended
-                            ? "bg-[#EFFCF9] text-[#189578] hover:bg-[#B4F2E1]"
-                            : "bg-[#FFF3F1] text-[#F94B35] hover:bg-[#F94B35] hover:text-white"
+                            ? "bg-[#EFFCF9] text-[#14755F] dark:text-[#4FD2B2] hover:bg-[#B4F2E1]"
+                            : "bg-[#FFF3F1] text-[#B02414] hover:bg-[#D93320] hover:text-white dark:bg-[#38110D] dark:text-[#FF7361]"
                         }`}
                       >
                         {isSuspended ? "Reactivate" : "Suspend Driver"}
@@ -305,7 +278,7 @@ export const CaptainsView: React.FC<CaptainsViewProps> = ({ selectedCityId, onOp
                 onChange={(e) => setUntil(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] p-2 text-sm text-slate-900 dark:text-white"
               />
-              <p className="text-[11px] text-slate-400">Leave empty for an open-ended suspension.</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Leave empty for an open-ended suspension.</p>
             </div>
           )}
         </ConfirmDialog>

@@ -8,6 +8,7 @@ import { useOnInvalidate } from "@/lib/invalidate";
 import { ApiCityFull, ApiServiceType } from "@/lib/adapters/pricing";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader, SectionTabs } from "@/components/ui/Page";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ConfigPanel } from "@/lib/pricing/ConfigPanel";
 import { FaresPanel } from "@/lib/pricing/FaresPanel";
@@ -37,53 +38,41 @@ export const PricingConfigView: React.FC = () => {
   const city = cityList.find((c) => c.id === cityPick) ?? cityList.find((c) => c.id === cityCtx.selectedCityId) ?? cityList[0] ?? null;
   const serviceType = typeList.find((s) => s.id === serviceTypePick) ?? typeList[0] ?? null;
 
-  const tabClass = (t: PricingTab) =>
-    `pb-3 border-b-2 transition-all whitespace-nowrap ${
-      tab === t
-        ? "border-[#3A102F] text-[#3A102F] dark:border-[#A74490] dark:text-[#E9BFDF]"
-        : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-    }`;
   const pill = (active: boolean) =>
-    `rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+    `min-h-10 rounded-xl px-4 py-2 text-xs font-bold transition-colors ${
       active
         ? "bg-[#3A102F] text-white dark:bg-[#7A2B66]"
-        : "bg-white dark:bg-[#180D1C] border border-slate-200 dark:border-[#331A3B] text-slate-600 dark:text-slate-300 hover:border-[#7A2B66]"
+        : "border border-slate-200 bg-white text-slate-700 hover:border-[#7A2B66] dark:border-[#331A3B] dark:bg-[#180D1C] dark:text-slate-300"
     }`;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Title */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Pricing, Dynamic Surge & Geofencing</h1>
-          <p className="text-xs text-slate-500">
-            Configure city-specific base fares, mileage rates, surge pricing, service boundaries, feature flags and platform settings
-          </p>
+      <PageHeader
+        title="Pricing, Dynamic Surge & Geofencing"
+        description="Configure city-specific base fares, mileage rates, surge pricing, service boundaries, feature flags and platform settings"
+      />
+
+      {/* City Picker */}
+      {tab !== "CONFIG" && cityList.length > 0 && (
+        <div role="group" aria-label="City" className="flex flex-wrap items-center gap-2">
+          {cityList.map((c) => (
+            <button key={c.id} type="button" onClick={() => setCityPick(c.id)} aria-pressed={city?.id === c.id} className={pill(city?.id === c.id)}>
+              {c.name}
+            </button>
+          ))}
         </div>
+      )}
 
-        {/* City Picker */}
-        {tab !== "CONFIG" && (
-          <div className="flex flex-wrap items-center gap-2">
-            {cityList.map((c) => (
-              <button key={c.id} onClick={() => setCityPick(c.id)} className={pill(city?.id === c.id)}>
-                {c.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="flex border-b border-[#F0E3ED] dark:border-[#331A3B] gap-6 text-xs font-bold overflow-x-auto">
-        <button onClick={() => setTab("FARES")} className={tabClass("FARES")}>
-          Fares, Cancellation & Surge
-        </button>
-        <button onClick={() => setTab("ZONES")} className={tabClass("ZONES")}>
-          Zones & Geofencing
-        </button>
-        <button onClick={() => setTab("CONFIG")} className={tabClass("CONFIG")}>
-          Feature Flags & Platform Config
-        </button>
-      </div>
+      <SectionTabs
+        label="Pricing sections"
+        value={tab}
+        onChange={setTab}
+        items={[
+          { id: "FARES", label: "Fares, Cancellation & Surge" },
+          { id: "ZONES", label: "Zones & Geofencing" },
+          { id: "CONFIG", label: "Feature Flags & Platform Config" },
+        ]}
+      />
 
       {cities.error && !cities.data && <ErrorBanner error={cities.error} title="Could not load cities" onRetry={cities.refetch} />}
       {serviceTypes.error && !serviceTypes.data && <ErrorBanner error={serviceTypes.error} title="Could not load service types" onRetry={serviceTypes.refetch} />}
@@ -103,8 +92,8 @@ export const PricingConfigView: React.FC = () => {
         <EmptyState title="No active service types" description="Service types are managed by an unscoped administrator." />
       ) : (
         <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">Ride type</span>
+          <div role="group" aria-label="Ride type" className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-300">Ride type</span>
             {typeList.map((s) => {
               const enabled = s.enabledCityIds.includes(city.id);
               return (

@@ -5,6 +5,7 @@ import { Siren, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/Badge";
 import { EmptyState, LoadMore } from "@/components/ui/EmptyState";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { ChipTabs, PageHeader, fieldClass } from "@/components/ui/Page";
 import { CardsSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 import { api } from "@/lib/api";
 import { toIncident, type ApiIncidentDetail, type ApiIncidentSummary, type ApiIncidentStatus, type ApiIncidentType, type IncidentView } from "@/lib/adapters/safety";
@@ -80,30 +81,27 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Title */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-slate-900 dark:text-white">Safety & Emergency Incident Console</h1>
-            <Badge variant="coral" size="sm">
-              SLA Monitored
-            </Badge>
-          </div>
-          <p className="text-xs text-slate-500">Real-time SOS triggers, acknowledgement SLA, incident timeline, and contact logging</p>
-        </div>
+      <PageHeader
+        title="Safety & Emergency Incident Console"
+        badge={
+          <Badge variant="coral" size="sm">
+            SLA Monitored
+          </Badge>
+        }
+        description="Real-time SOS triggers, acknowledgement SLA, incident timeline, and contact logging"
+      />
 
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl border border-[#FFC4BC] dark:border-[#61130A] bg-[#FFF3F1] dark:bg-[#38110D] px-3.5 py-2 text-xs text-right">
-            <span className="text-[10px] text-[#F94B35] uppercase font-bold">Active Alarms</span>
-            <p className="font-mono font-black text-[#D93320]">
-              {active.items.length}
-              {active.hasMore ? "+" : ""} Unacknowledged
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#180D1C] px-3.5 py-2 text-xs text-right">
-            <span className="text-[10px] text-slate-400 uppercase font-bold">Handled Today</span>
-            <p className="font-mono font-black text-emerald-600">{today.data ? handledToday : "—"} Closed</p>
-          </div>
+      <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:max-w-xl">
+        <div className="min-w-0 rounded-xl border border-[#FFC4BC] bg-[#FFF3F1] px-3.5 py-2 text-xs dark:border-[#61130A] dark:bg-[#38110D]">
+          <span className="text-[10px] font-bold uppercase text-[#B02414] dark:text-[#FF7361]">Active Alarms</span>
+          <p className="font-mono font-black text-[#B02414] dark:text-[#FF7361]">
+            {active.items.length}
+            {active.hasMore ? "+" : ""} Unacknowledged
+          </p>
+        </div>
+        <div className="min-w-0 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs dark:border-[#331A3B] dark:bg-[#180D1C]">
+          <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">Handled Today</span>
+          <p className="font-mono font-black text-emerald-700 dark:text-emerald-400">{today.data ? handledToday : "—"} Closed</p>
         </div>
       </div>
 
@@ -112,8 +110,8 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
       {active.initialLoading && <CardsSkeleton count={1} />}
       {active.items.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-black uppercase tracking-wider text-[#F94B35] flex items-center gap-2">
-            <Siren className="h-4 w-4 animate-bounce" />
+          <h2 className="text-sm font-black uppercase tracking-wider text-[#D93320] dark:text-[#FF7361] flex items-center gap-2">
+            <Siren className="h-4 w-4 shrink-0 motion-safe:animate-bounce" aria-hidden="true" />
             Active Emergencies Requiring Immediate Response
           </h2>
 
@@ -133,26 +131,14 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
 
       {/* Incident History Table */}
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <h2 className="text-sm font-bold text-slate-900 dark:text-white">Incident Resolution Log</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex gap-1 overflow-x-auto text-xs">
-              {LOG_FILTERS.map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => setLogFilter(f.value)}
-                  className={`rounded-xl px-3 py-1.5 font-bold transition-all whitespace-nowrap ${
-                    logFilter === f.value ? "bg-[#3A102F] text-white dark:bg-[#7A2B66]" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#28162E]"
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+            <ChipTabs label="Incident status" items={LOG_FILTERS.map((f) => ({ id: f.value, label: f.label }))} value={logFilter} onChange={setLogFilter} />
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value as ApiIncidentType | "ALL")}
-              className="rounded-xl border border-slate-200 dark:border-[#331A3B] bg-white dark:bg-[#211226] px-2.5 py-1.5 text-xs text-slate-700 dark:text-white"
+              className={`${fieldClass} cursor-pointer`}
               aria-label="Incident type"
             >
               <option value="ALL">All types</option>
@@ -173,10 +159,10 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
           ) : logRows.length === 0 && !log.error ? (
             <EmptyState icon={ShieldCheck} title="No incidents found" description="Nothing matches the current filters." />
           ) : (
-            <div className="data-table-container">
-              <table className="w-full text-left border-collapse text-xs">
+            <div className="data-table-container sticky-first">
+              <table className="w-full min-w-[60rem] text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                     <th className="py-3 px-4">Incident</th>
                     <th className="py-3 px-4">City</th>
                     <th className="py-3 px-4">Initiator</th>
@@ -192,7 +178,7 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
                     <tr key={inc.id} onClick={() => onOpenSOSModal(inc.id)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-[#28162E]/30">
                       <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
                         {inc.ref}
-                        <p className="font-sans text-[10px] font-normal text-slate-400">{humanize(inc.type)}</p>
+                        <p className="font-sans text-[10px] font-normal text-slate-500 dark:text-slate-400">{humanize(inc.type)}</p>
                       </td>
                       <td className="py-3 px-4">{inc.city}</td>
                       <td className="py-3 px-4 font-semibold">{inc.realm === "CAPTAIN" ? "Captain" : "Rider"}</td>
@@ -209,10 +195,10 @@ export const SafetyConsoleView: React.FC<SafetyConsoleViewProps> = ({ selectedCi
                       <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">
                         {inc.assignedStaffId ? (staff.nameOf(inc.assignedStaffId) ?? `Staff ${inc.assignedStaffId.slice(0, 6)}`) : "Unassigned"}
                       </td>
-                      <td className="py-3 px-4 text-slate-400">{inc.timestamp}</td>
-                      <td className="py-3 px-4 text-slate-500 max-w-xs truncate">
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{inc.timestamp}</td>
+                      <td className="py-3 px-4 text-slate-500 dark:text-slate-400 max-w-xs truncate">
                         {inc.outcomeCode ? humanize(inc.outcomeCode) : inc.status === "ACKNOWLEDGED" ? "In progress" : "Awaiting acknowledgement"}
-                        {inc.slaBreached && <span className="ml-1.5 text-[#F94B35] font-bold">SLA breached</span>}
+                        {inc.slaBreached && <span className="ml-1.5 text-[#D93320] dark:text-[#FF7361] font-bold">SLA breached</span>}
                       </td>
                     </tr>
                   ))}
@@ -241,15 +227,15 @@ const ActiveCard: React.FC<ActiveCardProps> = ({ summary, ctx, onOpen }) => {
   const rideRef = detail.data?.snapshot?.ride?.bookingRef;
 
   return (
-    <div className="rounded-3xl border-2 border-[#F94B35] bg-white dark:bg-[#180D1C] p-6 shadow-xl space-y-4 animate-sos">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F94B35] text-white">
-            <Siren className="h-6 w-6 animate-pulse" />
+    <div className="animate-sos min-w-0 space-y-4 rounded-3xl border-2 border-[#F94B35] bg-white p-4 shadow-xl dark:bg-[#180D1C] sm:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#D93320] text-white">
+            <Siren className="h-6 w-6 motion-safe:animate-pulse" aria-hidden="true" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-black uppercase text-[#F94B35]">
+              <span className="text-xs font-black uppercase text-[#D93320] dark:text-[#FF7361]">
                 {incident.ref} • {incident.city}
               </span>
               <Badge variant="coral" size="sm" pulse>
@@ -263,15 +249,15 @@ const ActiveCard: React.FC<ActiveCardProps> = ({ summary, ctx, onOpen }) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           {incident.slaRunning && (
-            <div className={`rounded-2xl border px-4 py-2 text-center ${breached ? "bg-rose-600 text-white border-rose-700" : "bg-[#FFF3F1] dark:bg-[#38110D] border-[#FFC4BC] text-[#D93320]"}`}>
+            <div className={`rounded-2xl border px-4 py-2 text-center ${breached ? "bg-rose-600 text-white border-rose-700" : "bg-[#FFF3F1] dark:bg-[#38110D] border-[#FFC4BC] text-[#B02414] dark:border-[#61130A] dark:text-[#FF7361]"}`}>
               <span className="text-[10px] font-bold uppercase">{breached ? "SLA BREACHED" : "SLA TIMER"}</span>
               <p className="text-xl font-mono font-black">{incident.slaSecondsLeft}s Left</p>
             </div>
           )}
 
-          <button onClick={onOpen} className="rounded-xl bg-[#F94B35] hover:bg-[#D93320] text-white px-5 py-2.5 text-xs font-bold transition-all shadow-md">
+          <button onClick={onOpen} className="min-h-11 rounded-xl bg-[#D93320] px-5 py-2.5 text-xs font-bold text-white shadow-md transition-colors hover:bg-[#B02414]">
             Launch Incident Command
           </button>
         </div>
@@ -289,9 +275,9 @@ const ActiveCard: React.FC<ActiveCardProps> = ({ summary, ctx, onOpen }) => {
 };
 
 const Tile: React.FC<{ label: string; value: string; sub?: string; mono?: boolean; accent?: boolean }> = ({ label, value, sub, mono, accent }) => (
-  <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#211226] border border-slate-200 dark:border-[#331A3B]">
-    <span className="text-slate-400 text-[10px] uppercase font-bold">{label}</span>
-    <p className={`font-bold ${mono ? "font-mono" : ""} ${accent ? "text-[#7A2B66] dark:text-[#DB99CC]" : "text-slate-900 dark:text-white"}`}>{value}</p>
-    {sub && <p className="text-[10px] text-slate-400">{sub}</p>}
+  <div className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-[#331A3B] dark:bg-[#211226]">
+    <span className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold">{label}</span>
+    <p className={`truncate font-bold ${mono ? "font-mono" : ""} ${accent ? "text-[#7A2B66] dark:text-[#DB99CC]" : "text-slate-900 dark:text-white"}`}>{value}</p>
+    {sub && <p className="text-[10px] text-slate-500 dark:text-slate-400">{sub}</p>}
   </div>
 );

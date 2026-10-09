@@ -74,7 +74,7 @@ export const AcceptInviteScreen: React.FC<{ token: string }> = ({ token }) => {
             invalid={!!error}
             describedBy="new-password-hint"
           />
-          <p id="new-password-hint" className="text-[11px] text-slate-400">
+          <p id="new-password-hint" className="text-[11px] text-slate-500 dark:text-slate-400">
             At least 12 characters; must not contain your name or e-mail.
           </p>
         </div>

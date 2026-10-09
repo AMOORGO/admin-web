@@ -89,7 +89,7 @@ export const SurgeCard: React.FC<SurgeCardProps> = ({ city, serviceTypes }) => {
     <div className="rounded-2xl border border-amber-200 dark:border-amber-950/60 bg-amber-50/50 dark:bg-amber-950/20 p-5 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-amber-600" />
+          <Zap className="h-4 w-4 text-amber-700 dark:text-amber-400" />
           <h3 className="text-sm font-bold text-amber-900 dark:text-amber-200">Dynamic Surge Pricing: {city.name}</h3>
         </div>
         <div className="flex items-center gap-2">
@@ -123,10 +123,10 @@ export const SurgeCard: React.FC<SurgeCardProps> = ({ city, serviceTypes }) => {
       ) : rules.data.items.length === 0 ? (
         <EmptyState title="No surge rules" description="Zones use their standing multiplier only." className="py-6" />
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-white/70 dark:bg-[#180D1C]/70">
-          <table className="w-full text-left border-collapse text-xs">
+        <div className="data-table-container sticky-first">
+          <table className="w-full min-w-[45rem] text-left border-collapse text-xs">
             <thead>
-              <tr className="text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-amber-100 dark:border-amber-950/40">
+              <tr className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-amber-100 dark:border-amber-950/40">
                 <th className="py-2 px-3">Zone</th>
                 <th className="py-2 px-3">Ride type</th>
                 <th className="py-2 px-3">Multiplier</th>
@@ -142,8 +142,8 @@ export const SurgeCard: React.FC<SurgeCardProps> = ({ city, serviceTypes }) => {
                   <tr key={r.id}>
                     <td className="py-2 px-3 font-semibold text-slate-900 dark:text-white">{r.zone?.name ?? r.zoneId.slice(0, 8)}</td>
                     <td className="py-2 px-3 text-slate-600 dark:text-slate-300">{typeName(r.serviceTypeId)}</td>
-                    <td className="py-2 px-3 font-mono font-bold text-[#F94B35]">{(r.multiplierBps / 10_000).toFixed(2)}x</td>
-                    <td className="py-2 px-3 text-slate-500">
+                    <td className="py-2 px-3 font-mono font-bold text-[#D93320] dark:text-[#FF7361]">{(r.multiplierBps / 10_000).toFixed(2)}x</td>
+                    <td className="py-2 px-3 text-slate-500 dark:text-slate-400">
                       {formatDateTime(r.startsAt)} → {formatDateTime(r.endsAt)}
                     </td>
                     <td className="py-2 px-3">

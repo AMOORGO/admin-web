@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { X, User, Car, RotateCcw, Ban, Sliders, KeyRound, Shuffle, CheckCircle2, Search, Copy } from "lucide-react";
+import { User, Car, RotateCcw, Ban, Sliders, KeyRound, Shuffle, CheckCircle2, Search, Copy } from "lucide-react";
 import { Badge } from "./Badge";
 import { Can } from "./Can";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
+import { Sheet } from "@/components/ui/Sheet";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { api, errorMessage } from "@/lib/api";
@@ -57,7 +58,7 @@ interface PickedCaptain {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const fieldCls =
-  "w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#7A2B66] focus:outline-none focus:ring-1 focus:ring-[#7A2B66]";
+  "w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#7A2B66] focus:outline-none";
 const labelCls = "block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1";
 
 /** Searchable captain list (GET /admin/captains?q=...) plus a paste-an-ID fallback. */
@@ -88,14 +89,14 @@ const CaptainPicker: React.FC<{ cityId: string; value: PickedCaptain | null; onC
       {value ? (
         <div className="flex items-center justify-between rounded-xl border border-[#7A2B66] bg-[#FAF0F7] dark:bg-[#331A3B] px-3 py-2 text-xs">
           <span className="font-bold text-[#3A102F] dark:text-[#E9BFDF]">{value.label}</span>
-          <button type="button" onClick={() => onChange(null)} className="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white">
+          <button type="button" onClick={() => onChange(null)} className="text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white">
             Clear
           </button>
         </div>
       ) : (
         <>
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
             <input
               value={input}
               onChange={(e) => {
@@ -108,20 +109,20 @@ const CaptainPicker: React.FC<{ cityId: string; value: PickedCaptain | null; onC
               className={`${fieldCls} pl-9`}
             />
           </div>
-          <label className="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer">
             <input type="checkbox" checked={onlineOnly} onChange={(e) => setOnlineOnly(e.target.checked)} className="accent-[#7A2B66]" />
             Online captains only (the API rejects offline / busy captains)
           </label>
           <div className="max-h-40 overflow-y-auto rounded-xl border border-slate-200 dark:border-[#331A3B] divide-y divide-slate-100 dark:divide-[#331A3B]">
             {captains.error ? (
-              <p className="p-3 text-xs text-[#F94B35]">{errorMessage(captains.error)}</p>
+              <p className="p-3 text-xs text-[#D93320] dark:text-[#FF7361]">{errorMessage(captains.error)}</p>
             ) : captains.initialLoading ? (
               <div className="p-3 space-y-2">
                 <Skeleton className="h-4 w-2/3" />
                 <Skeleton className="h-4 w-1/2" />
               </div>
             ) : (captains.data ?? []).length === 0 ? (
-              <p className="p-3 text-xs text-slate-400 italic">No matching captains.</p>
+              <p className="p-3 text-xs text-slate-500 dark:text-slate-400 italic">No matching captains.</p>
             ) : (
               (captains.data ?? []).map((c) => (
                 <button
@@ -132,7 +133,7 @@ const CaptainPicker: React.FC<{ cityId: string; value: PickedCaptain | null; onC
                 >
                   <span>
                     <span className="font-semibold text-slate-800 dark:text-slate-100">{c.name}</span>
-                    <span className="block text-[10px] text-slate-400">
+                    <span className="block text-[10px] text-slate-500 dark:text-slate-400">
                       {c.vehicle ? `${c.vehicle.make} ${c.vehicle.model} • ${c.vehicle.plateNumber}` : "No vehicle"} • ★ {c.rating.toFixed(1)}
                     </span>
                   </span>
@@ -268,13 +269,16 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
 
   const targets = status ? allowedStatusTargets(status) : [];
   const showPending = pending && pending.rideId === rideId ? pending : null;
-  const tabBtn = (id: typeof activeTab, label: string, mr = true) => (
+  const tabBtn = (id: typeof activeTab, label: string) => (
     <button
+      type="button"
+      role="tab"
+      aria-selected={activeTab === id}
       onClick={() => setActiveTab(id)}
-      className={`py-3 text-xs font-bold border-b-2 ${mr ? "mr-6" : ""} transition-all whitespace-nowrap ${
+      className={`min-h-11 text-xs font-bold border-b-2 transition-all whitespace-nowrap ${
         activeTab === id
           ? "border-[#3A102F] text-[#3A102F] dark:border-[#A74490] dark:text-[#E9BFDF]"
-          : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          : "border-transparent text-slate-500 hover:text-slate-600 dark:hover:text-slate-200"
       }`}
     >
       {label}
@@ -285,14 +289,13 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
-        <div
-          className="relative w-full max-w-xl h-full bg-white dark:bg-[#180D1C] border-l border-[#F0E3ED] dark:border-[#331A3B] shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-300"
-          role="dialog"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#F0E3ED] dark:border-[#331A3B] px-6 py-4 bg-[#FAF0F7]/40 dark:bg-[#211226]/50">
-            <div className="flex items-center gap-3 min-w-0">
+      <Sheet
+        open
+        onClose={onClose}
+        widthClass="sm:max-w-xl"
+        headerClassName="bg-[#FAF0F7]/40 dark:bg-[#211226]/50"
+        bodyClassName="space-y-6 p-4 sm:p-6"
+        header={
               <div className="min-w-0">
                 {ride ? (
                   <>
@@ -314,30 +317,108 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                 ) : (
                   <>
                     <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Ride details</h3>
-                    <p className="text-xs text-slate-500 font-mono truncate">{rideId}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate">{rideId}</p>
                   </>
                 )}
               </div>
-            </div>
-
-            <button
-              onClick={onClose}
-              aria-label="Close"
-              className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-[#28162E] dark:hover:text-white transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {/* Sub Navigation Tabs */}
-          <div className="flex border-b border-[#F0E3ED] dark:border-[#331A3B] px-6 bg-white dark:bg-[#180D1C] overflow-x-auto">
+        }
+        subheader={
+          <div className="flex gap-6 overflow-x-auto px-4 sm:px-6" role="tablist" aria-label="Ride sections">
             {tabBtn("TIMELINE", "Ride State Timeline")}
             {tabBtn("FARE", ride ? `Fare & Payment (${formatMoney(ride.finalFareMinor ?? ride.estimatedFareMinor, cur)})` : "Fare & Payment")}
-            {tabBtn("DISPATCH", `Dispatch Log (${ride ? ride.attempts.reduce((n, a) => n + a.offers.length, 0) : 0})`, false)}
+            {tabBtn("DISPATCH", `Dispatch Log (${ride ? ride.attempts.reduce((n, a) => n + a.offers.length, 0) : 0})`)}
           </div>
+        }
+        footer={
+          <div className="space-y-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">OPERATIONAL INTERVENTIONS</span>
+            <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0 sm:pb-0">
+              <Can permission="rides.reassign">
+                <button
+                  onClick={() => {
+                    setPickedCaptain(null);
+                    setDialog("reassign");
+                  }}
+                  disabled={!status || !canReassignRide(status)}
+                  title={status && !canReassignRide(status) ? "Only possible before the trip starts" : undefined}
+                  className="min-h-11 shrink-0 whitespace-nowrap rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] px-3 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#7A2B66] hover:text-[#7A2B66] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  {status && !isAssignedStatus(status) ? "Assign" : "Reassign"}
+                </button>
+              </Can>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <Can permission="rides.adjust_fare">
+                <button
+                  onClick={() => {
+                    setAdjustAmount("");
+                    setDialog("adjust");
+                  }}
+                  disabled={!status || !canAdjustFare(status)}
+                  title={status && !canAdjustFare(status) ? "Settled rides need a refund instead" : undefined}
+                  className="min-h-11 shrink-0 whitespace-nowrap rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] px-3 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#189578] hover:text-[#189578] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
+                >
+                  <Sliders className="h-3.5 w-3.5" />
+                  Adjust Fare
+                </button>
+              </Can>
+
+              <Can permission="rides.change_status">
+                <button
+                  onClick={() => {
+                    setStatusTarget(targets[0] ?? "");
+                    setDialog("status");
+                  }}
+                  disabled={targets.length === 0}
+                  title={targets.length === 0 ? "No forced transition is allowed from this status" : undefined}
+                  className="min-h-11 shrink-0 whitespace-nowrap rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] px-3 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#7A2B66] hover:text-[#7A2B66] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
+                >
+                  <Shuffle className="h-3.5 w-3.5" />
+                  Change Status
+                </button>
+              </Can>
+
+              <Can permission="rides.change_status">
+                <button
+                  onClick={() => setDialog("pin")}
+                  disabled={!ride}
+                  className="min-h-11 shrink-0 whitespace-nowrap rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] px-3 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#7A2B66] hover:text-[#7A2B66] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Reset PIN Tries
+                </button>
+              </Can>
+
+              <Can permission="rides.cancel">
+                <button
+                  onClick={() => {
+                    setCancelCode("OPERATIONAL");
+                    setWaiveFee(true);
+                    setDialog("cancel");
+                  }}
+                  disabled={!status || !canCancelRide(status)}
+                  className="min-h-11 shrink-0 whitespace-nowrap rounded-xl bg-[#FFF3F1] dark:bg-[#38110D] border border-[#FFC4BC] dark:border-[#61130A] px-3 text-xs font-bold text-[#F94B35] hover:bg-[#F94B35] hover:text-white disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
+                >
+                  <Ban className="h-3.5 w-3.5" />
+                  Cancel Ride
+                </button>
+              </Can>
+            </div>
+            {can("rides.adjust_fare") && can("finance.refund_approve") && (
+              <button
+                onClick={() => {
+                  setApprovalId(showPending?.approvalId ?? "");
+                  setDialog("approve");
+                }}
+                className="flex items-center gap-1 text-[11px] font-bold text-[#7A2B66] dark:text-[#DB99CC] hover:underline"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Approve a colleague&apos;s pending fare adjustment
+              </button>
+            )}
+          </div>
+        }
+      >
             {detailQ.error && <ErrorBanner error={detailQ.error} title="Could not load this ride" onRetry={refetchAll} />}
 
             {!ride && !detailQ.error && (
@@ -362,7 +443,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                   <button
                     type="button"
                     onClick={() => void navigator.clipboard?.writeText(showPending.approvalId)}
-                    className="rounded-md p-1 text-slate-500 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                    className="rounded-md p-1 text-slate-500 dark:text-slate-400 hover:bg-amber-100 dark:hover:bg-amber-900/40"
                     title="Copy approval ID"
                   >
                     <Copy className="h-3.5 w-3.5" />
@@ -383,26 +464,26 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                     </div>
                     <div className="flex-1 space-y-2 text-xs">
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400">PICKUP</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">PICKUP</span>
                         <p className="font-semibold text-slate-800 dark:text-slate-100">{ride.pickupAddress}</p>
-                        <p className="font-mono text-[10px] text-slate-400">
+                        <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
                           {ride.pickupCoords[0].toFixed(5)}, {ride.pickupCoords[1].toFixed(5)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-[10px] uppercase font-bold text-slate-400">DROPOFF</span>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">DROPOFF</span>
                         <p className="font-semibold text-slate-800 dark:text-slate-100">{ride.dropoffAddress}</p>
-                        <p className="font-mono text-[10px] text-slate-400">
+                        <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
                           {ride.dropoffCoords[0].toFixed(5)}, {ride.dropoffCoords[1].toFixed(5)}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] font-bold uppercase text-slate-400">PIN ATTEMPTS</span>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400">PIN ATTEMPTS</span>
                       <p className="text-base font-mono font-black text-[#7A2B66] dark:text-[#DB99CC]">{ride.startPinAttempts}</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-200/70 dark:border-[#331A3B] pt-2 text-[11px] text-slate-500">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 border-t border-slate-200/70 dark:border-[#331A3B] pt-2 text-[11px] text-slate-500 dark:text-slate-400">
                     <span>Requested {formatDateTime(ride.requestedAt)}</span>
                     {ride.scheduledFor && <span>Scheduled {formatDateTime(ride.scheduledFor)}</span>}
                     {ride.estimatedDistanceKm !== null && <span>Est. {ride.estimatedDistanceKm.toFixed(1)} km</span>}
@@ -428,24 +509,24 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                   <div className="rounded-xl border border-[#F0E3ED] dark:border-[#331A3B] p-3.5 space-y-2">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-[#7A2B66] dark:text-[#DB99CC]" />
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">PASSENGER</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">PASSENGER</span>
                     </div>
                     <div className="flex items-center gap-3">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={ride.rider.avatar} alt={ride.rider.name} className="h-10 w-10 rounded-full object-cover border border-slate-200" />
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-slate-900 dark:text-white">{ride.rider.name}</p>
-                        <p className="text-[11px] text-slate-500">{ride.rider.phone || "—"}</p>
-                        {ride.riderEmail && <p className="text-[10px] text-slate-400 truncate">{ride.riderEmail}</p>}
-                        <span className="text-[11px] font-bold text-amber-500">★ {ride.rider.rating.toFixed(1)}</span>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">{ride.rider.phone || "—"}</p>
+                        {ride.riderEmail && <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{ride.riderEmail}</p>}
+                        <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">★ {ride.rider.rating.toFixed(1)}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="rounded-xl border border-[#F0E3ED] dark:border-[#331A3B] p-3.5 space-y-2">
                     <div className="flex items-center gap-2">
-                      <Car className="h-4 w-4 text-[#189578]" />
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">CAPTAIN</span>
+                      <Car className="h-4 w-4 text-[#14755F] dark:text-[#4FD2B2]" />
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">CAPTAIN</span>
                     </div>
                     {ride.captain ? (
                       <div className="flex items-center gap-3">
@@ -453,15 +534,15 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                         <img src={ride.captain.avatar} alt={ride.captain.name} className="h-10 w-10 rounded-full object-cover border border-slate-200" />
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-slate-900 dark:text-white">{ride.captain.name}</p>
-                          <p className="text-[11px] text-slate-500">{ride.captain.phone || "—"}</p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">{ride.captain.phone || "—"}</p>
                           <p className="text-[11px] font-mono text-[#7A2B66] dark:text-[#DB99CC] font-bold">
                             {ride.captain.vehiclePlate} • {ride.captain.vehicleModel}
                           </p>
-                          <span className="text-[11px] font-bold text-amber-500">★ {ride.captain.rating.toFixed(1)}</span>
+                          <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400">★ {ride.captain.rating.toFixed(1)}</span>
                         </div>
                       </div>
                     ) : (
-                      <div className="py-2 text-xs text-slate-400 italic">No captain assigned yet</div>
+                      <div className="py-2 text-xs text-slate-500 dark:text-slate-400 italic">No captain assigned yet</div>
                     )}
                   </div>
                 </div>
@@ -471,7 +552,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
             {/* Tab 1: Finite State Machine Timeline */}
             {activeTab === "TIMELINE" && (
               <div className="space-y-4">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Finite State Machine Progression</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Finite State Machine Progression</h4>
                 {timelineQ.error ? (
                   <ErrorBanner error={timelineQ.error} title="Could not load the timeline" onRetry={timelineQ.refetch} />
                 ) : timelineQ.initialLoading ? (
@@ -480,7 +561,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                     <Skeleton className="h-10 w-full" />
                   </div>
                 ) : timeline.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">No status history recorded.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 italic">No status history recorded.</p>
                 ) : (
                   <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-[#331A3B]">
                     {timeline.map((step, index) => (
@@ -491,13 +572,13 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                         <div>
                           <div className="flex items-center justify-between gap-2">
                             <p className="text-xs font-bold text-slate-900 dark:text-white">{step.title}</p>
-                            <span className="text-[11px] font-mono text-slate-400 whitespace-nowrap">{step.timestamp}</span>
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap">{step.timestamp}</span>
                           </div>
                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{step.description}</p>
                           <div className="mt-1 flex flex-wrap gap-1.5">
-                            <span className="inline-block text-[10px] font-semibold text-slate-500 bg-slate-100 dark:bg-[#211226] px-2 py-0.5 rounded">By {step.actorLabel}</span>
+                            <span className="inline-block text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#211226] px-2 py-0.5 rounded">By {step.actorLabel}</span>
                             {step.latencySeconds && (
-                              <span className="inline-block text-[10px] font-mono font-semibold text-[#189578] bg-[#EFFCF9] dark:bg-[#0D2620] px-2 py-0.5 rounded">
+                              <span className="inline-block text-[10px] font-mono font-semibold text-[#14755F] dark:text-[#4FD2B2] bg-[#EFFCF9] dark:bg-[#0D2620] px-2 py-0.5 rounded">
                                 +{step.latencySeconds}s
                               </span>
                             )}
@@ -548,7 +629,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                       )}
                       <div className="flex justify-between px-4 py-2.5 bg-amber-50/50 dark:bg-amber-950/20">
                         <span className="text-amber-800 dark:text-amber-300 font-semibold">Surge Multiplier ({(b.surgeMultiplierBps / 10000).toFixed(2)}x)</span>
-                        <span className="font-mono font-bold text-amber-600">+{formatMoney(b.surgeMinor, cur)}</span>
+                        <span className="font-mono font-bold text-amber-700 dark:text-amber-400">+{formatMoney(b.surgeMinor, cur)}</span>
                       </div>
                       <div className="flex justify-between px-4 py-2.5">
                         <span className="text-slate-600 dark:text-slate-400">Booking / service fee</span>
@@ -587,7 +668,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                         <span className="text-slate-600 dark:text-slate-400">Estimated fare (quoted)</span>
                         <span className="font-mono font-bold">{formatMoney(ride.estimatedFareMinor, cur)}</span>
                       </div>
-                      <p className="text-slate-400 italic">No itemised fare breakdown is stored on this ride.</p>
+                      <p className="text-slate-500 dark:text-slate-400 italic">No itemised fare breakdown is stored on this ride.</p>
                     </div>
                   )}
                   {ride.adminFareAdjustmentMinor !== 0 && (
@@ -608,7 +689,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                       {humanize(ride.payment?.status ?? ride.paymentStatusRaw ?? "Not started")}
                     </Badge>
                   </div>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-400">
                     Method: {humanize(ride.paymentMethodRaw)}
                     {ride.payment ? ` via ${ride.payment.provider}` : ""}
                   </p>
@@ -634,9 +715,9 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                       <span className="font-mono text-right">{ride.payment.attemptCount}</span>
                     </div>
                   ) : (
-                    <p className="text-slate-400 italic">No payment record yet.</p>
+                    <p className="text-slate-500 dark:text-slate-400 italic">No payment record yet.</p>
                   )}
-                  {ride.payment?.failureMessage && <p className="text-[11px] text-[#F94B35]">Failure: {ride.payment.failureMessage}</p>}
+                  {ride.payment?.failureMessage && <p className="text-[11px] text-[#D93320] dark:text-[#FF7361]">Failure: {ride.payment.failureMessage}</p>}
                 </div>
               </div>
             )}
@@ -644,15 +725,15 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
             {/* Tab 3: Dispatch Candidate Log */}
             {activeTab === "DISPATCH" && ride && (
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Radar Dispatch Attempts</h4>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Radar Dispatch Attempts</h4>
                 {ride.attempts.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">No dispatch attempts recorded.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 italic">No dispatch attempts recorded.</p>
                 ) : (
                   ride.attempts.map((a) => (
                     <div key={a.attemptNo} className="rounded-xl border border-slate-200 dark:border-[#331A3B] overflow-hidden">
                       <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-[#211226]/60 px-3 py-2 text-[11px]">
                         <span className="font-bold text-slate-800 dark:text-slate-100">Attempt #{a.attemptNo}</span>
-                        <span className="text-slate-500">
+                        <span className="text-slate-500 dark:text-slate-400">
                           {humanize(a.strategy)} • {a.radiusKm.toFixed(1)} km radius • {a.candidateCount} candidate{a.candidateCount === 1 ? "" : "s"}
                         </span>
                         <Badge variant={a.result === "ASSIGNED" ? "teal" : a.result === "OPEN" ? "warning" : "coral"} size="sm">
@@ -660,19 +741,19 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                         </Badge>
                       </div>
                       <div className="divide-y divide-slate-100 dark:divide-[#331A3B]">
-                        {a.offers.length === 0 && <p className="px-3 py-2 text-xs text-slate-400 italic">No offers were sent in this attempt.</p>}
+                        {a.offers.length === 0 && <p className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400 italic">No offers were sent in this attempt.</p>}
                         {a.offers.map((o) => (
                           <div key={o.id} className="px-3 py-2.5 text-xs flex items-center justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-bold text-slate-800 dark:text-slate-100">
                                 #{o.rank} {o.captainName}
-                                {o.rating !== null && <span className="ml-1.5 text-amber-500">★ {o.rating.toFixed(1)}</span>}
+                                {o.rating !== null && <span className="ml-1.5 text-amber-700 dark:text-amber-400">★ {o.rating.toFixed(1)}</span>}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                                 {o.distanceKm !== null ? `${o.distanceKm.toFixed(1)} km away` : "distance n/a"}
                                 {o.etaSeconds !== null ? ` • ETA ${Math.round(o.etaSeconds / 60)} min` : ""} • score {o.score.toFixed(2)} • offered {formatDateTime(o.offeredAt)}
                               </p>
-                              {o.reason && <p className="text-[10px] text-rose-500 font-medium mt-0.5">Reason: {o.reason}</p>}
+                              {o.reason && <p className="text-[10px] text-rose-600 dark:text-rose-400 font-medium mt-0.5">Reason: {o.reason}</p>}
                             </div>
                             <Badge variant={o.status === "ACCEPTED" ? "teal" : o.status === "EXPIRED" || o.status === "PENDING" ? "warning" : "coral"} size="sm">
                               {o.status === "EXPIRED" ? "TIMEOUT" : o.status}
@@ -680,7 +761,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                           </div>
                         ))}
                         {a.excluded.length > 0 && (
-                          <details className="px-3 py-2 text-[11px] text-slate-500">
+                          <details className="px-3 py-2 text-[11px] text-slate-500 dark:text-slate-400">
                             <summary className="cursor-pointer font-semibold">{a.excluded.length} excluded candidate{a.excluded.length === 1 ? "" : "s"}</summary>
                             <ul className="mt-1.5 space-y-1">
                               {a.excluded.map((c) => (
@@ -697,98 +778,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
                 )}
               </div>
             )}
-          </div>
-
-          {/* Admin Intervention Controls Footer */}
-          <div className="border-t border-[#F0E3ED] dark:border-[#331A3B] p-4 bg-[#FAF0F7]/40 dark:bg-[#211226]/50 space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">OPERATIONAL INTERVENTIONS</span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <Can permission="rides.reassign">
-                <button
-                  onClick={() => {
-                    setPickedCaptain(null);
-                    setDialog("reassign");
-                  }}
-                  disabled={!status || !canReassignRide(status)}
-                  title={status && !canReassignRide(status) ? "Only possible before the trip starts" : undefined}
-                  className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] p-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#7A2B66] hover:text-[#7A2B66] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  {status && !isAssignedStatus(status) ? "Assign" : "Reassign"}
-                </button>
-              </Can>
-
-              <Can permission="rides.adjust_fare">
-                <button
-                  onClick={() => {
-                    setAdjustAmount("");
-                    setDialog("adjust");
-                  }}
-                  disabled={!status || !canAdjustFare(status)}
-                  title={status && !canAdjustFare(status) ? "Settled rides need a refund instead" : undefined}
-                  className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] p-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#189578] hover:text-[#189578] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
-                >
-                  <Sliders className="h-3.5 w-3.5" />
-                  Adjust Fare
-                </button>
-              </Can>
-
-              <Can permission="rides.change_status">
-                <button
-                  onClick={() => {
-                    setStatusTarget(targets[0] ?? "");
-                    setDialog("status");
-                  }}
-                  disabled={targets.length === 0}
-                  title={targets.length === 0 ? "No forced transition is allowed from this status" : undefined}
-                  className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] p-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#7A2B66] hover:text-[#7A2B66] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
-                >
-                  <Shuffle className="h-3.5 w-3.5" />
-                  Change Status
-                </button>
-              </Can>
-
-              <Can permission="rides.change_status">
-                <button
-                  onClick={() => setDialog("pin")}
-                  disabled={!ride}
-                  className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#180D1C] p-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:border-[#7A2B66] hover:text-[#7A2B66] disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
-                >
-                  <KeyRound className="h-3.5 w-3.5" />
-                  Reset PIN Tries
-                </button>
-              </Can>
-
-              <Can permission="rides.cancel">
-                <button
-                  onClick={() => {
-                    setCancelCode("OPERATIONAL");
-                    setWaiveFee(true);
-                    setDialog("cancel");
-                  }}
-                  disabled={!status || !canCancelRide(status)}
-                  className="col-span-2 sm:col-span-1 rounded-xl bg-[#FFF3F1] dark:bg-[#38110D] border border-[#FFC4BC] dark:border-[#61130A] p-2 text-xs font-bold text-[#F94B35] hover:bg-[#F94B35] hover:text-white disabled:opacity-40 transition-all text-center flex items-center justify-center gap-1.5"
-                >
-                  <Ban className="h-3.5 w-3.5" />
-                  Cancel Ride
-                </button>
-              </Can>
-            </div>
-            {can("rides.adjust_fare") && can("finance.refund_approve") && (
-              <button
-                onClick={() => {
-                  setApprovalId(showPending?.approvalId ?? "");
-                  setDialog("approve");
-                }}
-                className="flex items-center gap-1 text-[11px] font-bold text-[#7A2B66] dark:text-[#DB99CC] hover:underline"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Approve a colleague&apos;s pending fare adjustment
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      </Sheet>
 
       {/* Cancel */}
       <ConfirmDialog
@@ -840,7 +830,7 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
         onCancel={() => setDialog(null)}
       >
         {ride && <CaptainPicker cityId={ride.cityId} value={pickedCaptain} onChange={setPickedCaptain} />}
-        {status === "SEARCHING" && !pickedCaptain && <p className="text-[11px] text-slate-400">This ride is already in automatic dispatch: choose a captain to assign it manually.</p>}
+        {status === "SEARCHING" && !pickedCaptain && <p className="text-[11px] text-slate-500 dark:text-slate-400">This ride is already in automatic dispatch: choose a captain to assign it manually.</p>}
       </ConfirmDialog>
 
       {/* Adjust fare */}
@@ -867,9 +857,9 @@ export const RideDrawer: React.FC<RideDrawerProps> = ({ rideId, onClose }) => {
             onChange={(e) => setAdjustAmount(e.target.value)}
             className={fieldCls}
           />
-          {adjustAmount !== "" && !adjustValid && <p className="mt-1 text-[11px] text-[#F94B35]">Enter a non-zero amount between -10,000.00 and 10,000.00.</p>}
+          {adjustAmount !== "" && !adjustValid && <p className="mt-1 text-[11px] text-[#D93320] dark:text-[#FF7361]">Enter a non-zero amount between -10,000.00 and 10,000.00.</p>}
           {adjustValid && adjustMinor !== null && (
-            <p className="mt-1 text-[11px] text-slate-400">
+            <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
               = {adjustMinor > 0 ? "+" : ""}
               {adjustMinor} minor units ({formatMoney(adjustMinor, cur)})
               {ride ? `; current total ${formatMoney(ride.finalFareMinor ?? ride.estimatedFareMinor, cur)} -> ${formatMoney((ride.finalFareMinor ?? ride.estimatedFareMinor) + adjustMinor, cur)}` : ""}

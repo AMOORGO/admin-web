@@ -42,7 +42,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ cities }) => {
             ))}
           </select>
         </label>
-        <p className="text-[11px] text-slate-400">City scope shows effective values and writes a city-level override.</p>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">City scope shows effective values and writes a city-level override.</p>
       </div>
 
       <FlagsCard cityId={cityId} scopeLabel={scopeLabel} />
@@ -82,8 +82,8 @@ const FlagsCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ ci
             <div key={f.key} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] p-3">
               <div className="min-w-0">
                 <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">{f.key}</p>
-                <p className="text-[11px] text-slate-500 break-words">{f.description}</p>
-                <p className="text-[10px] text-slate-400">Default: {f.default ? "on" : "off"}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 break-words">{f.description}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400">Default: {f.default ? "on" : "off"}</p>
               </div>
               <Can permission="config.edit" fallback={<Badge variant={f.enabled ? "teal" : "neutral"} size="sm">{f.enabled ? "ON" : "OFF"}</Badge>}>
                 <Toggle label={`Toggle ${f.key}`} checked={f.enabled} onChange={() => setTarget(f)} />
@@ -194,7 +194,7 @@ const ConfigCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ c
           <h2 className="text-base font-bold text-slate-900 dark:text-white">Platform Configuration ({scopeLabel})</h2>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -203,7 +203,7 @@ const ConfigCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ c
           />
         </div>
       </div>
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-slate-500 dark:text-slate-400">
         Values are validated by the server against each key&apos;s schema. Complex structured values (objects, text lists) are shown read-only.
       </p>
       {entries.error && !entries.data && <ErrorBanner error={entries.error} title="Could not load configuration" onRetry={entries.refetch} />}
@@ -218,7 +218,7 @@ const ConfigCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ c
         grouped.map(([group, list]) => (
           <details key={group} open={search !== "" || group === "payments"} className="rounded-2xl border border-slate-200 dark:border-[#331A3B]">
             <summary className="cursor-pointer select-none px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-              {humanize(group)} <span className="ml-1 font-normal text-slate-400">({list.length})</span>
+              {humanize(group)} <span className="ml-1 font-normal text-slate-500 dark:text-slate-400">({list.length})</span>
             </summary>
             <div className="divide-y divide-slate-100 dark:divide-[#331A3B]">
               {list.map((e) => {
@@ -229,9 +229,9 @@ const ConfigCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ c
                     <div className="min-w-0 flex-1 basis-64">
                       <p className="font-mono font-bold text-slate-900 dark:text-white break-all">
                         {e.key}
-                        {e.public && <span className="ml-2 rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[9px] font-sans font-semibold text-slate-500">public</span>}
+                        {e.public && <span className="ml-2 rounded bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[9px] font-sans font-semibold text-slate-500 dark:text-slate-400">public</span>}
                       </p>
-                      <p className="text-[11px] text-slate-500">{e.description}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">{e.description}</p>
                     </div>
                     <div className="max-w-[22rem] basis-48 grow-0">
                       {k === "boolean" ? (
@@ -257,7 +257,7 @@ const ConfigCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ c
                             <RotateCcw className="h-3 w-3" /> Reset
                           </button>
                         )}
-                        {k === "readonly" && <span className="text-[10px] italic text-slate-400">read-only</span>}
+                        {k === "readonly" && <span className="text-[10px] italic text-slate-500 dark:text-slate-400">read-only</span>}
                       </div>
                     </Can>
                   </div>
@@ -298,7 +298,7 @@ const ConfigCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ c
             ) : kind === "number" ? (
               <>
                 <input type="number" value={edit.draft} onChange={(e) => setEdit({ ...edit, draft: e.target.value })} className={INPUT} />
-                {isMinorKey(edit.entry.key) && Number.isFinite(Number(edit.draft)) && <p className="text-[11px] text-slate-400">Minor units (cents) = {formatMoney(Number(edit.draft))}</p>}
+                {isMinorKey(edit.entry.key) && Number.isFinite(Number(edit.draft)) && <p className="text-[11px] text-slate-500 dark:text-slate-400">Minor units (cents) = {formatMoney(Number(edit.draft))}</p>}
               </>
             ) : (
               <input
@@ -308,7 +308,7 @@ const ConfigCard: React.FC<{ cityId: string | null; scopeLabel: string }> = ({ c
                 className={`${INPUT} font-sans`}
               />
             )}
-            <p className="text-[11px] text-slate-400">Currently: {displayValue(edit.entry, edit.entry.value)} · default: {displayValue(edit.entry, edit.entry.default)}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Currently: {displayValue(edit.entry, edit.entry.value)} · default: {displayValue(edit.entry, edit.entry.default)}</p>
           </div>
         )}
       </ConfirmDialog>
@@ -337,7 +337,7 @@ const IntegrationsCard: React.FC = () => {
       <div className="flex items-center gap-2">
         <Plug className="h-4 w-4 text-[#7A2B66]" />
         <h2 className="text-base font-bold text-slate-900 dark:text-white">Integrations</h2>
-        <span className="text-[11px] text-slate-400">read-only, secrets are never shown</span>
+        <span className="text-[11px] text-slate-500 dark:text-slate-400">read-only, secrets are never shown</span>
       </div>
       {items.error && !items.data && <ErrorBanner error={items.error} title="Could not load integrations" onRetry={items.refetch} />}
       {items.initialLoading ? (
@@ -347,7 +347,7 @@ const IntegrationsCard: React.FC = () => {
           {(items.data ?? []).map((i) => (
             <div key={i.service} className="rounded-2xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] p-3 space-y-1.5">
               <p className="text-xs font-bold text-slate-900 dark:text-white">{humanize(i.service)}</p>
-              <p className="font-mono text-[11px] text-slate-500">{i.provider}</p>
+              <p className="font-mono text-[11px] text-slate-500 dark:text-slate-400">{i.provider}</p>
               <div className="flex flex-wrap gap-1">
                 <Badge variant={i.configured ? "teal" : "coral"} size="sm">
                   {i.configured ? "configured" : "not configured"}

@@ -99,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeRidesCount, onlineCaptains
       {isDemo && (
         <div
           role="status"
-          className="flex min-h-9 items-center justify-center gap-2 bg-[#3A102F] px-3 py-1 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] text-xs font-semibold text-white"
+          className="flex min-h-10 items-center justify-center gap-2 bg-[#3A102F] px-3 py-1 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] text-xs font-semibold text-white"
         >
           <span className="min-w-0 truncate">
             <span className="sm:hidden">Demo mode · sample data</span>
@@ -134,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeRidesCount, onlineCaptains
             <span className="h-2.5 w-2.5 rounded-full bg-[#F94B35]" />
           </div>
           <span className="text-lg font-black tracking-tight text-slate-900 dark:text-white">
-            Amoor<span className="text-[#F94B35]">Go</span>
+            Amoor<span className="text-[#D93320] dark:text-[#FF7361]">Go</span>
           </span>
           <span className="hidden rounded-md bg-[#FAF0F7] px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-[#7A2B66] dark:bg-[#331A3B] dark:text-[#E9BFDF] sm:inline">
             OPS

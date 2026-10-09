@@ -22,10 +22,14 @@ interface SheetProps {
   footer?: React.ReactNode;
   /** Header / footer surface tint. */
   headerClassName?: string;
+  /** Center variant: use (almost) the full viewport height on sm+ instead of fitting the content. */
+  fill?: boolean;
   /** Overrides the default body padding. */
   bodyClassName?: string;
   /** Set false while an action is in flight to block Esc / backdrop / close-button dismissal. */
   dismissible?: boolean;
+  /** Coral frame for emergency screens (SOS). */
+  danger?: boolean;
   /** Use a darker backdrop for high-stakes screens (SOS). */
   strongBackdrop?: boolean;
   children: React.ReactNode;
@@ -45,8 +49,10 @@ export const Sheet: React.FC<SheetProps> = ({
   subheader,
   footer,
   headerClassName = "",
+  fill = false,
   bodyClassName = "p-4 sm:p-6",
   dismissible = true,
+  danger = false,
   strongBackdrop = false,
   children,
 }) => {
@@ -62,8 +68,9 @@ export const Sheet: React.FC<SheetProps> = ({
   if (!open || typeof document === "undefined") return null;
 
   const isRight = variant === "right";
+  // Compact dialogs become bottom sheets on phones; `fill` ones stay full-screen.
   return createPortal(
-    <div className={`fixed inset-0 z-[100] flex ${isRight ? "justify-end" : "sm:items-center sm:justify-center sm:p-6"}`}>
+    <div className={`fixed inset-0 z-[100] flex ${isRight ? "justify-end" : `${fill ? "" : "items-end"} sm:items-center sm:justify-center sm:p-6`}`}>
       <div
         aria-hidden="true"
         onClick={requestClose}
@@ -79,7 +86,7 @@ export const Sheet: React.FC<SheetProps> = ({
         className={`relative flex h-dvh w-full min-w-0 flex-col overflow-hidden bg-white text-[#1C121A] shadow-2xl outline-none dark:bg-[#180D1C] dark:text-[#FBF8FA] ${widthClass} ${
           isRight
             ? "anim-sheet-right sm:h-dvh sm:border-l sm:border-[#F0E3ED] sm:dark:border-[#331A3B]"
-            : "anim-pop sm:h-auto sm:max-h-[min(90dvh,820px)] sm:rounded-2xl sm:border sm:border-[#F0E3ED] sm:dark:border-[#331A3B]"
+            : `sm:rounded-2xl ${fill ? "anim-pop sm:h-[92dvh]" : "anim-sheet-up max-sm:h-auto max-sm:max-h-[92dvh] max-sm:rounded-t-2xl sm:h-auto sm:max-h-[min(90dvh,820px)]"} ${danger ? "sm:border-2 sm:border-[#F94B35]" : "sm:border sm:border-[#F0E3ED] sm:dark:border-[#331A3B]"}`
         }`}
       >
         <div

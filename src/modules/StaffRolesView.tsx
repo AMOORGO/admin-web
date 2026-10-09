@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { UserPlus, Check, X, Search, Loader2, Lock, Plus, Pencil, Trash2 } from "lucide-react";
+import { UserPlus, Check, X, Loader2, Lock, Plus, Pencil, Trash2 } from "lucide-react";
+import { Sheet } from "@/components/ui/Sheet";
+import { ChipTabs, PageHeader, SearchInput, SectionTabs, Toolbar } from "@/components/ui/Page";
 import { Badge } from "@/components/Badge";
 import { Can } from "@/components/Can";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -20,23 +22,28 @@ import { ApiPermissionGroup, ApiRole, ApiStaff, MODULE_LABELS, StaffMember, toSt
 import { humanize } from "@/lib/format";
 
 const inputClass =
-  "w-full rounded-xl border border-slate-300 dark:border-[#331A3B] p-2.5 text-sm dark:bg-[#211226] dark:text-white focus:outline-none focus:ring-1 focus:ring-[#7A2B66]";
+  "w-full rounded-xl border border-slate-300 dark:border-[#331A3B] p-2.5 text-sm dark:bg-[#211226] dark:text-white focus:outline-none";
 const labelClass = "font-bold text-slate-700 dark:text-slate-300 block mb-1";
 
-const ModalShell: React.FC<{ title: string; description?: string; wide?: boolean; children: React.ReactNode }> = ({ title, description, wide, children }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-    <div
-      role="dialog"
-      aria-modal="true"
-      className={`w-full ${wide ? "max-w-2xl" : "max-w-md"} max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#180D1C] border border-[#F0E3ED] dark:border-[#331A3B] p-6 shadow-2xl space-y-4`}
-    >
-      <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
-      {description && <p className="text-xs text-slate-500">{description}</p>}
-      {children}
-    </div>
-  </div>
+const ModalShell: React.FC<{ title: string; description?: string; wide?: boolean; onClose: () => void; children: React.ReactNode }> = ({ title, description, wide, onClose, children }) => (
+  <Sheet
+    open
+    onClose={onClose}
+    variant="center"
+    widthClass={wide ? "sm:max-w-2xl" : "sm:max-w-md"}
+    bodyClassName="space-y-4 p-4 sm:p-6"
+    header={
+      <div className="min-w-0">
+        <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
+        {description && <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300">{description}</p>}
+      </div>
+    }
+  >
+    {children}
+  </Sheet>
 );
 
+/** Sticky action bar at the bottom of a ModalShell body (stays visible while the form scrolls; safe-area aware). */
 const ModalFooter: React.FC<{ onCancel: () => void; onSubmit: () => void; submitLabel: string; pending: boolean; disabled?: boolean }> = ({
   onCancel,
   onSubmit,
@@ -44,16 +51,17 @@ const ModalFooter: React.FC<{ onCancel: () => void; onSubmit: () => void; submit
   pending,
   disabled,
 }) => (
-  <div className="flex justify-end gap-2 pt-2">
-    <button onClick={onCancel} disabled={pending} className="rounded-xl px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-[#28162E]">
+  <div className="sticky bottom-0 -mx-4 -mb-4 flex flex-col-reverse gap-2 border-t border-[#F0E3ED] bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 dark:border-[#331A3B] dark:bg-[#180D1C] sm:-mx-6 sm:-mb-6 sm:flex-row sm:justify-end sm:px-6 sm:pb-4">
+    <button type="button" onClick={onCancel} disabled={pending} className="min-h-11 rounded-xl px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-[#28162E] pointer-fine:min-h-10">
       Cancel
     </button>
     <button
+      type="button"
       onClick={onSubmit}
       disabled={pending || disabled}
-      className="flex items-center gap-2 rounded-xl bg-[#3A102F] text-white px-4 py-2 text-xs font-bold hover:bg-[#521A44] disabled:opacity-40"
+      className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#3A102F] px-4 py-2 text-xs font-bold text-white hover:bg-[#521A44] disabled:opacity-40 dark:bg-[#7A2B66] dark:hover:bg-[#A74490] pointer-fine:min-h-10"
     >
-      {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+      {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
       {submitLabel}
     </button>
   </div>
@@ -97,74 +105,41 @@ export const StaffRolesView: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Title */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Staff Management & Role-Based Access Control (RBAC)</h1>
-          <p className="text-xs text-slate-500">Invite co-admins, configure regional scopes, enforce TOTP 2FA, and inspect granular permission matrix</p>
-        </div>
-
-        <Can permission="staff.create">
-          <button
-            onClick={() => setShowInvite(true)}
-            className="flex items-center gap-2 rounded-xl bg-[#3A102F] hover:bg-[#521A44] dark:bg-[#7A2B66] text-white px-4 py-2 text-xs font-bold transition-all shadow-md"
-          >
-            <UserPlus className="h-4 w-4" />
-            Invite Co-Admin
-          </button>
-        </Can>
-      </div>
+      <PageHeader
+        title="Staff Management & Role-Based Access Control (RBAC)"
+        description="Invite co-admins, configure regional scopes, enforce TOTP 2FA, and inspect granular permission matrix"
+        actions={
+          <Can permission="staff.create">
+            <button
+              type="button"
+              onClick={() => setShowInvite(true)}
+              className="flex min-h-10 items-center gap-2 rounded-xl bg-[#3A102F] px-4 py-2 text-xs font-bold text-white shadow-md transition-colors hover:bg-[#521A44] dark:bg-[#7A2B66] dark:hover:bg-[#A74490]"
+            >
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              Invite Co-Admin
+            </button>
+          </Can>
+        }
+      />
 
       {/* Tabs */}
-      <div className="flex border-b border-[#F0E3ED] dark:border-[#331A3B] gap-6 text-xs font-bold">
-        {(
-          [
-            ["STAFF", `Staff & Co-Admins${staff.items.length ? ` (${staff.items.length}${staff.hasMore ? "+" : ""})` : ""}`],
-            ["MATRIX", "Roles & Permission Matrix"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`pb-3 border-b-2 transition-all ${
-              activeTab === id
-                ? "border-[#3A102F] text-[#3A102F] dark:border-[#A74490] dark:text-[#E9BFDF]"
-                : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <SectionTabs
+        label="Staff sections"
+        value={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { id: "STAFF", label: `Staff & Co-Admins${staff.items.length ? ` (${staff.items.length}${staff.hasMore ? "+" : ""})` : ""}` },
+          { id: "MATRIX", label: "Roles & Permission Matrix" },
+        ]}
+      />
 
       {/* Tab 1: Staff List */}
       {activeTab === "STAFF" && (
         <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-3 shadow-xs">
-            <div className="flex gap-1 text-xs">
-              {["ALL", "ACTIVE", "INVITED", "SUSPENDED"].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`rounded-xl px-3 py-1.5 font-bold transition-all ${
-                    statusFilter === s ? "bg-[#3A102F] text-white dark:bg-[#7A2B66]" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#28162E]"
-                  }`}
-                >
-                  {humanize(s)}
-                </button>
-              ))}
-            </div>
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] pl-9 pr-3 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none"
-              />
-            </div>
-          </div>
+          <Toolbar className="lg:flex lg:items-center lg:justify-between lg:space-y-0">
+            <ChipTabs label="Staff status" items={["ALL", "ACTIVE", "INVITED", "SUSPENDED"].map((st) => ({ id: st, label: humanize(st) }))} value={statusFilter} onChange={setStatusFilter} />
+            <SearchInput value={search} onValueChange={setSearch} placeholder="Search name or email..." className="lg:w-72" />
+          </Toolbar>
 
           {staff.error && <ErrorBanner error={staff.error} title="Could not load staff" onRetry={staff.refetch} />}
 
@@ -174,10 +149,10 @@ export const StaffRolesView: React.FC = () => {
             ) : members.length === 0 && !staff.error ? (
               <EmptyState title="No staff found" description="Adjust the filters, or invite a co-admin." />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
+              <div className="data-table-container sticky-first">
+                <table className="w-full min-w-[53rem] text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                    <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                       <th className="py-3 px-4">Staff Member</th>
                       <th className="py-3 px-4">Role</th>
                       <th className="py-3 px-4">Regional Scope</th>
@@ -195,13 +170,13 @@ export const StaffRolesView: React.FC = () => {
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={st.avatar} alt={st.name} className="h-8 w-8 rounded-full object-cover border border-[#7A2B66]" />
-                              <div>
+                              <img src={st.avatar} alt="" className="h-8 w-8 shrink-0 rounded-full border border-[#7A2B66] object-cover" />
+                              <div className="min-w-0">
                                 <p className="font-bold text-slate-900 dark:text-white">
                                   {st.name}
-                                  {isSelf && <span className="ml-1.5 text-[10px] font-semibold text-slate-400">(you)</span>}
+                                  {isSelf && <span className="ml-1.5 text-[10px] font-semibold text-slate-500 dark:text-slate-400">(you)</span>}
                                 </p>
-                                <p className="text-[10px] text-slate-400">{st.email}</p>
+                                <p className="max-w-[16rem] truncate text-[10px] text-slate-600 dark:text-slate-300" title={st.email}>{st.email}</p>
                               </div>
                             </div>
                           </td>
@@ -242,7 +217,7 @@ export const StaffRolesView: React.FC = () => {
                             )}
                           </td>
 
-                          <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">{st.lastLogin}</td>
+                          <td className="py-3 px-4 text-slate-500 dark:text-slate-400 font-mono text-[11px]">{st.lastLogin}</td>
 
                           <td className="py-3 px-4">
                             <Badge variant={st.status === "ACTIVE" ? "teal" : st.status === "INVITED" ? "warning" : "coral"} size="sm">
@@ -252,10 +227,10 @@ export const StaffRolesView: React.FC = () => {
 
                           <td className="py-3 px-4 text-center">
                             <Can permission="staff.manage">
-                              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                              <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   onClick={() => setEditRolesFor(st)}
-                                  className="rounded-lg bg-slate-100 dark:bg-[#211226] text-slate-700 dark:text-slate-300 px-2 py-1 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-[#28162E]"
+                                  className="min-h-10 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-[#211226] dark:text-slate-300 dark:hover:bg-[#28162E]"
                                 >
                                   Roles
                                 </button>
@@ -265,14 +240,14 @@ export const StaffRolesView: React.FC = () => {
                                   <>
                                     <button
                                       onClick={() => setReset2faFor(st)}
-                                      className="rounded-lg bg-slate-100 dark:bg-[#211226] text-slate-700 dark:text-slate-300 px-2 py-1 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-[#28162E]"
+                                      className="min-h-10 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-[#211226] dark:text-slate-300 dark:hover:bg-[#28162E]"
                                       title="Reset 2FA Secret"
                                     >
                                       Reset 2FA
                                     </button>
                                     <button
                                       onClick={() => setRevokeFor(st)}
-                                      className="rounded-lg bg-slate-100 dark:bg-[#211226] text-slate-700 dark:text-slate-300 px-2 py-1 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-[#28162E]"
+                                      className="min-h-10 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-200 dark:bg-[#211226] dark:text-slate-300 dark:hover:bg-[#28162E]"
                                       title="Sign this person out everywhere"
                                     >
                                       Revoke sessions
@@ -282,7 +257,7 @@ export const StaffRolesView: React.FC = () => {
                                 {!isSelf && st.status !== "INVITED" && (
                                   <button
                                     onClick={() => setSuspendFor(st)}
-                                    className={`rounded-lg px-2 py-1 text-xs font-semibold ${
+                                    className={`min-h-10 rounded-lg px-2.5 py-1 text-xs font-semibold ${
                                       st.status === "ACTIVE"
                                         ? "bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300"
                                         : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300"
@@ -511,7 +486,7 @@ const InviteModal: React.FC<{
   };
 
   return (
-    <ModalShell title="Invite Co-Administrator" description="An activation link is e-mailed. The invitee chooses a password and must enrol two-factor authentication on first sign-in.">
+    <ModalShell onClose={onClose} title="Invite Co-Administrator" description="An activation link is e-mailed. The invitee chooses a password and must enrol two-factor authentication on first sign-in.">
       <div className="space-y-3 text-xs">
         <div>
           <label className={labelClass} htmlFor="invite-name">
@@ -539,9 +514,9 @@ const InviteModal: React.FC<{
         </div>
         <div>
           <span className={labelClass}>City Scope Restriction</span>
-          <p className="text-[11px] text-slate-400 mb-1.5">Leave all unchecked for global access.</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-1.5">Leave all unchecked for global access.</p>
           {cities.length === 0 ? (
-            <p className="text-[11px] text-slate-400">No cities available.</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">No cities available.</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {cities.map((c) => (
@@ -559,7 +534,7 @@ const InviteModal: React.FC<{
         </div>
         <div>
           <label className={labelClass} htmlFor="invite-reason">
-            Reason <span className="font-normal text-slate-400">(optional, audit log)</span>
+            Reason <span className="font-normal text-slate-500 dark:text-slate-400">(optional, audit log)</span>
           </label>
           <input id="invite-reason" type="text" maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} />
         </div>
@@ -583,7 +558,7 @@ const EditRolesModal: React.FC<{ member: StaffMember; roles: ApiRole[]; onClose:
   };
 
   return (
-    <ModalShell title={`Roles for ${member.name}`} description="Effective permissions are the union of the selected roles (plus any per-user overrides). Changes apply to new sessions immediately.">
+    <ModalShell onClose={onClose} title={`Roles for ${member.name}`} description="Effective permissions are the union of the selected roles (plus any per-user overrides). Changes apply to new sessions immediately.">
       <div className="space-y-2 text-xs">
         {roles.length === 0 && <Skeleton className="h-20 w-full" />}
         {roles.map((r) => (
@@ -596,13 +571,13 @@ const EditRolesModal: React.FC<{ member: StaffMember; roles: ApiRole[]; onClose:
             />
             <span>
               <span className="font-bold text-slate-800 dark:text-slate-100">{r.name}</span>
-              {r.description && <span className="block text-[11px] text-slate-400">{r.description}</span>}
+              {r.description && <span className="block text-[11px] text-slate-500 dark:text-slate-400">{r.description}</span>}
             </span>
           </label>
         ))}
         <div>
           <label className={labelClass} htmlFor="roles-reason">
-            Reason <span className="text-[#F94B35]">*</span>
+            Reason <span className="text-[#D93320] dark:text-[#FF7361]">*</span>
           </label>
           <textarea id="roles-reason" rows={2} maxLength={300} value={reason} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="Why is access changing? (min. 3 characters)" />
         </div>
@@ -635,7 +610,7 @@ const RoleMatrix: React.FC<{
       <div className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] overflow-hidden shadow-xs">
         <div className="p-4 border-b border-slate-100 dark:border-[#331A3B] bg-slate-50/50 dark:bg-[#211226]/40 flex flex-wrap justify-between items-center gap-2 text-xs">
           <span className="font-bold text-slate-700 dark:text-slate-200">Role Permission Capabilities (live from the permission catalogue)</span>
-          <span className="flex items-center gap-3 text-slate-400">
+          <span className="flex items-center gap-3 text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
               <Lock className="h-3 w-3" /> requires mandatory 2FA
             </span>
@@ -650,18 +625,18 @@ const RoleMatrix: React.FC<{
         {loading ? (
           <TableSkeleton rows={8} cols={5} />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="data-table-container sticky-first">
+            <table className="w-full min-w-[44rem] text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-[#F0E3ED] dark:border-[#331A3B] bg-[#FAF0F7]/40 dark:bg-[#211226]/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                   <th className="py-3 px-4 w-72">Permission Key</th>
                   {roles.map((r) => (
                     <th key={r.id} className="py-3 px-4 text-center whitespace-nowrap">
                       <div>{r.name}</div>
-                      <div className="font-normal normal-case text-slate-400">{r.userCount} staff</div>
+                      <div className="font-normal normal-case text-slate-500 dark:text-slate-400">{r.userCount} staff</div>
                       {canManageRoles && !r.isSystem && (
                         <div className="mt-1 flex justify-center gap-1">
-                          <button onClick={() => onEdit(r)} className="rounded p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-[#28162E]" aria-label={`Edit ${r.name}`}>
+                          <button onClick={() => onEdit(r)} className="rounded p-1 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#28162E]" aria-label={`Edit ${r.name}`}>
                             <Pencil className="h-3 w-3" />
                           </button>
                           <button onClick={() => onDelete(r)} className="rounded p-1 text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40" aria-label={`Delete ${r.name}`}>
@@ -678,8 +653,8 @@ const RoleMatrix: React.FC<{
                   <tr key={p.key} className="hover:bg-slate-50 dark:hover:bg-[#28162E]/30">
                     <td className="py-3 px-4">
                       <span className="font-bold text-slate-900 dark:text-white">{p.description}</span>
-                      {p.sensitive && <Lock className="ml-1.5 inline h-3 w-3 text-amber-500" aria-label="Sensitive: mandatory 2FA" />}
-                      <p className="font-mono text-[10px] text-slate-400">
+                      {p.sensitive && <Lock className="ml-1.5 inline h-3 w-3 text-amber-700 dark:text-amber-400" aria-label="Sensitive: mandatory 2FA" />}
+                      <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">
                         {MODULE_LABELS[p.module] ?? humanize(p.module)} · {p.key}
                       </p>
                     </td>
@@ -690,7 +665,7 @@ const RoleMatrix: React.FC<{
                             <Check className="h-3.5 w-3.5" />
                           </span>
                         ) : (
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-[#211226]">
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:text-slate-400 dark:bg-[#211226]">
                             <X className="h-3.5 w-3.5" />
                           </span>
                         )}
@@ -736,7 +711,7 @@ const RoleEditorModal: React.FC<{
   const grantable = (p: { key: string; superAdminOnly: boolean }) => isSuper || (myPermissions.includes(p.key) && !p.superAdminOnly);
 
   return (
-    <ModalShell wide title={existing ? `Edit role: ${existing.name}` : "New custom role"} description="Custom roles are permission sets. System roles are read-only.">
+    <ModalShell onClose={onClose} wide title={existing ? `Edit role: ${existing.name}` : "New custom role"} description="Custom roles are permission sets. System roles are read-only.">
       <div className="space-y-3 text-xs">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -755,7 +730,7 @@ const RoleEditorModal: React.FC<{
         <div className="space-y-3 max-h-64 overflow-y-auto rounded-xl border border-slate-200 dark:border-[#331A3B] p-3">
           {catalogue.map((g) => (
             <div key={g.module}>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">{MODULE_LABELS[g.module] ?? humanize(g.module)}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">{MODULE_LABELS[g.module] ?? humanize(g.module)}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                 {g.permissions.map((p) => {
                   const ok = grantable(p);
@@ -770,7 +745,7 @@ const RoleEditorModal: React.FC<{
                       />
                       <span>
                         <span className="font-semibold text-slate-800 dark:text-slate-100">{p.description}</span>
-                        <span className="block font-mono text-[10px] text-slate-400">{p.key}</span>
+                        <span className="block font-mono text-[10px] text-slate-500 dark:text-slate-400">{p.key}</span>
                       </span>
                     </label>
                   );
@@ -781,7 +756,7 @@ const RoleEditorModal: React.FC<{
         </div>
         <div>
           <label className={labelClass} htmlFor="role-reason">
-            Reason <span className="text-[#F94B35]">*</span>
+            Reason <span className="text-[#D93320] dark:text-[#FF7361]">*</span>
           </label>
           <input id="role-reason" value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="Audit justification (min. 3 characters)" />
         </div>

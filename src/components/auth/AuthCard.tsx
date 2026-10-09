@@ -8,20 +8,20 @@ import { useAuth } from "@/lib/auth/AuthProvider";
 import type { EnrolmentInfo } from "@/lib/auth/types";
 
 export const AuthShell: React.FC<{ title: string; subtitle?: string; children: React.ReactNode }> = ({ title, subtitle, children }) => (
-  <div className="flex min-h-screen items-center justify-center bg-[#FDFBFC] dark:bg-[#0F0811] p-4">
-    <div className="w-full max-w-md rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-8 shadow-2xl">
+  <div className="flex min-h-dvh items-center justify-center bg-[#FDFBFC] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] dark:bg-[#0F0811]">
+    <div className="w-full max-w-md rounded-2xl border border-[#F0E3ED] bg-white p-5 shadow-2xl dark:border-[#331A3B] dark:bg-[#180D1C] sm:p-8">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#3A102F] text-white shadow-md">
           <span className="h-3 w-3 rounded-full bg-[#F94B35]" />
         </div>
         <div>
           <p className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
-            Amoor<span className="text-[#F94B35]">Go</span>{" "}
+            Amoor<span className="text-[#D93320] dark:text-[#FF7361]">Go</span>{" "}
             <span className="rounded-md bg-[#FAF0F7] dark:bg-[#331A3B] px-1.5 py-0.5 align-middle text-[10px] font-extrabold uppercase tracking-widest text-[#7A2B66] dark:text-[#E9BFDF]">
               OPS
             </span>
           </p>
-          <p className="text-xs text-slate-500">Staff console</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Staff console</p>
         </div>
       </div>
       <h1 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h1>
@@ -32,7 +32,7 @@ export const AuthShell: React.FC<{ title: string; subtitle?: string; children: R
 );
 
 export const fieldClass =
-  "w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#7A2B66] focus:outline-none focus:ring-1 focus:ring-[#7A2B66]";
+  "w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] px-3 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#7A2B66] focus:outline-none";
 
 export const primaryButtonClass =
   "flex w-full items-center justify-center gap-2 rounded-xl bg-[#3A102F] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-[#521A44] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#7A2B66] dark:hover:bg-[#A74490]";
@@ -114,13 +114,13 @@ export const PasswordField: React.FC<PasswordFieldProps> = ({
           disabled={disabled}
           aria-label={visible ? "Hide password" : "Show password"}
           aria-pressed={visible}
-          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-400 hover:text-slate-700 focus-visible:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A2B66] disabled:opacity-50 dark:hover:text-slate-200"
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-slate-500 dark:text-slate-400 hover:text-slate-700 focus-visible:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7A2B66] disabled:opacity-50 dark:hover:text-slate-200"
         >
           {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
         </button>
       </div>
       {capsOn && (
-        <p id={hintId} role="status" className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+        <p id={hintId} role="status" className="text-[11px] font-medium text-amber-700 dark:text-amber-400">
           Caps Lock is on.
         </p>
       )}
@@ -189,21 +189,21 @@ export const TwoFactorPanel: React.FC<{
             entering the setup key, or open the otpauth link on a device that has the app. Then type the 6-digit code below.
           </p>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Setup key</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Setup key</p>
             <div className="mt-1 flex items-center gap-2">
               <code data-testid="totp-secret" className="flex-1 break-all rounded-lg bg-white dark:bg-[#180D1C] px-2 py-1.5 font-mono text-xs text-slate-800 dark:text-slate-100 select-all">
                 {enrolment.secret}
               </code>
-              <button type="button" onClick={() => copy("secret", enrolment.secret)} className="rounded-lg border border-slate-200 dark:border-[#331A3B] p-1.5 text-slate-500 hover:bg-white dark:hover:bg-[#28162E]" aria-label="Copy setup key">
+              <button type="button" onClick={() => copy("secret", enrolment.secret)} className="rounded-lg border border-slate-200 dark:border-[#331A3B] p-1.5 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-[#28162E]" aria-label="Copy setup key">
                 {copied === "secret" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">otpauth link (QR payload)</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">otpauth link (QR payload)</p>
             <div className="mt-1 flex items-center gap-2">
               <code className="flex-1 break-all rounded-lg bg-white dark:bg-[#180D1C] px-2 py-1.5 font-mono text-[10px] text-slate-600 dark:text-slate-300 select-all">{enrolment.otpauthUrl}</code>
-              <button type="button" onClick={() => copy("url", enrolment.otpauthUrl)} className="rounded-lg border border-slate-200 dark:border-[#331A3B] p-1.5 text-slate-500 hover:bg-white dark:hover:bg-[#28162E]" aria-label="Copy otpauth link">
+              <button type="button" onClick={() => copy("url", enrolment.otpauthUrl)} className="rounded-lg border border-slate-200 dark:border-[#331A3B] p-1.5 text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-[#28162E]" aria-label="Copy otpauth link">
                 {copied === "url" ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
@@ -240,7 +240,7 @@ export const TwoFactorPanel: React.FC<{
         {pending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
         {pending ? "Verifying…" : enrolment ? "Verify & finish setup" : "Verify & sign in"}
       </button>
-      <button type="button" onClick={onBack} disabled={pending} className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+      <button type="button" onClick={onBack} disabled={pending} className="w-full text-center text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
         Back to sign in
       </button>
     </form>

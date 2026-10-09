@@ -316,7 +316,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span className="h-2.5 w-2.5 rounded-full bg-[#F94B35]" />
               </span>
               <span className="truncate text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                Amoor<span className="text-[#F94B35]">Go</span>
+                Amoor<span className="text-[#D93320] dark:text-[#FF7361]">Go</span>
               </span>
               <span className="rounded-md bg-[#FAF0F7] px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-widest text-[#7A2B66] dark:bg-[#331A3B] dark:text-[#E9BFDF]">
                 OPS
