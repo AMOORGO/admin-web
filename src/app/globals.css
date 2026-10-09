@@ -56,6 +56,7 @@
   --accent-teal: #189578;
   --card-shadow: 0 4px 20px -2px rgba(58, 16, 47, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
   --modal-overlay: rgba(25, 5, 20, 0.5);
+  --accent-plum-ring: #7A2B66;
 }
 
 [data-theme="dark"] {
@@ -75,14 +76,45 @@
   --accent-teal: #26B896;
   --card-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), 0 2px 8px -2px rgba(167, 68, 144, 0.15);
   --modal-overlay: rgba(5, 2, 6, 0.8);
+  --accent-plum-ring: #DB99CC;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: 6rem;
 }
 
 body {
+  min-height: 100dvh;
   background-color: var(--bg-app);
   color: var(--text-main);
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   overflow-x: hidden;
+  overflow-wrap: break-word;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Words never break mid-word in running UI text unless they cannot fit (long emails / ids wrap instead of overflowing). */
+button, select, input, textarea {
+  overflow-wrap: normal;
+}
+
+/* Consistent keyboard focus ring (mouse / touch focus stays quiet). */
+:is(a, button, summary, [role="button"], [role="tab"], [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-plum-ring);
+  outline-offset: 2px;
+}
+:is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent-plum-ring);
+  outline-offset: 1px;
+}
+
+/* Inputs must be >=16px on touch so iOS Safari does not zoom the page on focus. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
+    font-size: 16px !important;
+  }
 }
 
 /* Custom Scrollbar */
@@ -111,21 +143,6 @@ body {
   }
 }
 
-@keyframes ping-subtle {
-  0% {
-    transform: scale(0.95);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 0.4;
-  }
-  100% {
-    transform: scale(0.95);
-    opacity: 0.8;
-  }
-}
-
 @keyframes sos-pulse {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba(249, 75, 53, 0.6);
@@ -139,39 +156,60 @@ body {
   animation: radar-sweep 4s linear infinite;
 }
 
-.animate-ping-subtle {
-  animation: ping-subtle 2s ease-in-out infinite;
-}
-
 .animate-sos {
   animation: sos-pulse 1.8s ease-in-out infinite;
 }
 
-/* Glassmorphism helpers */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
-}
-
-[data-theme="dark"] .glass-panel {
-  background: rgba(24, 13, 28, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
-}
-
-/* Table accessibility and sticky header */
+/* ── Tables ──────────────────────────────────────────────────────────────────────────────────────────
+   Wide data tables scroll horizontally inside their card (never the page). Wrap any <table> in .data-table-container
+   (or <DataTable>); add .sticky-first to pin the first column while scrolling sideways. */
 .data-table-container {
-  overflow: auto;
+  overflow-x: auto;
   max-inline-size: 100%;
-  container-type: inline-size;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-.data-table-container thead {
+.data-table-container > table {
+  min-inline-size: 44rem;
+}
+
+.data-table-container.sticky-first > table th:first-child,
+.data-table-container.sticky-first > table td:first-child {
   position: sticky;
-  top: 0;
-  z-index: 10;
-  backdrop-filter: blur(8px);
+  inset-inline-start: 0;
+  z-index: 1;
+  background-color: var(--bg-surface);
+  box-shadow: 1px 0 0 var(--border-subtle);
+}
+
+.data-table-container.sticky-first > table thead th:first-child {
+  background-color: var(--bg-subtle);
+}
+
+/* ── Overlay motion (the shared <Sheet>, mobile nav, fullscreen map) ─────────────────────────────────── */
+@keyframes anim-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes anim-sheet-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes anim-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.anim-fade { animation: anim-fade 0.2s ease-out both; }
+.anim-sheet-right { animation: anim-sheet-right 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-pop { animation: anim-pop 0.18s ease-out both; }
+
+/* Respect reduced motion everywhere: no transitions, no looping decoration, no slide-ins. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

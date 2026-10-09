@@ -89,10 +89,10 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* Header with Title and Live Counts */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-xl font-black text-slate-900 dark:text-white">Live Fleet & Dispatch Radar</h1>
+            <h1 className="text-lg font-black text-slate-900 dark:text-white sm:text-xl">Live Fleet & Dispatch Radar</h1>
             {socketLive ? (
               <Badge variant="teal" size="sm" dot pulse>
                 SOCKET LIVE
@@ -103,21 +103,21 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
               </Badge>
             )}
             {snapshot && (
-              <span className="text-[11px] font-mono text-slate-500">
+              <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
                 {snapshot.onlineCaptains} online captains • {snapshotTotal} live rides
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500">Real-time telemetry and active ride interventions in {cityLabel}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-300">Real-time telemetry and active ride interventions in {cityLabel}</p>
         </div>
 
         {sosRides > 0 && (
           <button
             onClick={() => onOpenSOSModal()}
-            className="flex items-center gap-2 rounded-xl bg-[#F94B35] text-white px-4 py-2 text-xs font-bold shadow-md hover:bg-[#D93320] transition-all animate-sos"
+            className="animate-sos flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D93320] px-4 py-2 text-xs font-bold text-white shadow-md transition-colors hover:bg-[#B02414] sm:w-auto"
           >
-            <Siren className="h-4 w-4 animate-bounce" />
-            <span>Emergency In Progress ({sosRides} ride{sosRides === 1 ? "" : "s"} with SOS)</span>
+            <Siren className="h-4 w-4 shrink-0 motion-safe:animate-bounce" aria-hidden="true" />
+            <span className="min-w-0 text-left">Emergency In Progress ({sosRides} ride{sosRides === 1 ? "" : "s"} with SOS)</span>
           </button>
         )}
       </div>
@@ -125,9 +125,9 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
       {map.error && <ErrorBanner error={map.error} title="Could not load the live map" onRetry={map.refetch} />}
 
       {/* Main Grid: Left Map (70%) + Right Active Rides Stream (30%) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-5">
         {/* Map Column */}
-        <div className="lg:col-span-8 flex flex-col space-y-3">
+        <div className="flex min-w-0 flex-col lg:col-span-8">
           <LiveMap
             cityLabel={cityLabel}
             center={selectedCity ? [selectedCity.centerLat, selectedCity.centerLng] : null}
@@ -142,37 +142,39 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
         </div>
 
         {/* Active Rides Stream Column */}
-        <div className="lg:col-span-4 rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-4 flex flex-col h-[540px] shadow-xs">
+        <div className="flex h-[min(80dvh,560px)] min-h-[420px] min-w-0 flex-col rounded-2xl border border-[#F0E3ED] bg-white p-4 shadow-xs dark:border-[#331A3B] dark:bg-[#180D1C] lg:col-span-4 lg:h-[min(70dvh,540px)]">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#331A3B]">
             <div className="flex items-center gap-2">
               <Car className="h-4 w-4 text-[#7A2B66] dark:text-[#DB99CC]" />
-              <h3 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Active Trips ({filteredRides.length})</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Active Trips ({filteredRides.length})</h3>
             </div>
-            <span className="text-[10px] font-mono text-slate-400">City: {cityLabel}</span>
+            <span className="min-w-0 truncate text-[10px] font-mono text-slate-500 dark:text-slate-400">City: {cityLabel}</span>
           </div>
 
           {/* Search & Filter */}
           <div className="py-2.5 space-y-2">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500 dark:text-slate-400" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Search ride #, rider, captain, plate..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 dark:border-[#331A3B] bg-slate-50 dark:bg-[#211226] pl-8 pr-3 py-1.5 text-xs text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none"
+                aria-label="Search live rides"
+                className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-500 dark:border-[#331A3B] dark:bg-[#211226] dark:text-white sm:min-h-9"
               />
             </div>
 
-            <div className="flex gap-1 overflow-x-auto pb-1 text-[11px]">
+            <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 text-[11px]" role="group" aria-label="Filter by status">
               {LIVE_STATUS_TABS.map((st) => (
                 <button
                   key={st.id}
                   onClick={() => setStatusFilter(st.id)}
-                  className={`rounded-lg px-2.5 py-1 font-semibold whitespace-nowrap transition-colors ${
+                  aria-pressed={statusFilter === st.id}
+                  className={`min-h-10 shrink-0 whitespace-nowrap rounded-lg px-3 font-semibold transition-colors sm:min-h-8 ${
                     statusFilter === st.id
                       ? "bg-[#3A102F] text-white"
-                      : "bg-slate-100 dark:bg-[#211226] text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white"
+                      : "bg-slate-100 text-slate-700 hover:text-black dark:bg-[#211226] dark:text-slate-300 dark:hover:text-white"
                   }`}
                 >
                   {st.label}
@@ -184,7 +186,7 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
           {list.error && <ErrorBanner error={list.error} title="Could not load active trips" onRetry={list.refetch} className="mb-2" />}
 
           {/* List of Active Rides */}
-          <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+          <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pr-1">
             {list.initialLoading ? (
               <div className="space-y-2.5">
                 <Skeleton className="h-24 w-full" />
@@ -197,42 +199,50 @@ export const LiveOpsView: React.FC<LiveOpsViewProps> = ({ selectedCityId, onSele
               filteredRides.map((ride) => (
                 <div
                   key={ride.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => onSelectRide(ride.id)}
-                  className={`rounded-xl border p-3 cursor-pointer transition-all hover:scale-[1.01] ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelectRide(ride.id);
+                    }
+                  }}
+                  className={`cursor-pointer rounded-xl border p-3 transition-colors ${
                     ride.hasSOSAlert
                       ? "border-rose-400 bg-rose-50/50 dark:bg-rose-950/20"
                       : "border-slate-200 dark:border-[#331A3B] hover:border-[#7A2B66] bg-slate-50/50 dark:bg-[#211226]/40"
                   }`}
                 >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-900 dark:text-white">{ride.bookingCode}</span>
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="min-w-0 truncate font-bold text-slate-900 dark:text-white">{ride.bookingCode}</span>
                     <Badge variant={statusVariant(ride.rawStatus)} size="sm">
                       {statusLabel(ride.rawStatus)}
                     </Badge>
                   </div>
 
                   <div className="mt-2 text-xs space-y-1">
-                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                      <span>Rider:</span>
-                      <span className="font-semibold">{ride.rider.name}</span>
+                    <div className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
+                      <span className="shrink-0">Rider:</span>
+                      <span className="min-w-0 truncate font-semibold">{ride.rider.name}</span>
                     </div>
-                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                      <span>Captain:</span>
-                      <span className="font-semibold">{ride.captain ? ride.captain.name : "Matching..."}</span>
+                    <div className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
+                      <span className="shrink-0">Captain:</span>
+                      <span className="min-w-0 truncate font-semibold">{ride.captain ? ride.captain.name : "Matching..."}</span>
                     </div>
-                    <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                      <span>Fare:</span>
+                    <div className="flex justify-between gap-3 text-slate-600 dark:text-slate-300">
+                      <span className="shrink-0">Fare:</span>
                       <span className="font-mono font-bold text-[#7A2B66] dark:text-[#DB99CC]">
                         {formatMoney(ride.finalFareMinor ?? ride.estimatedFareMinor, ride.currency)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
-                    <span className="truncate max-w-[180px]">
+                  <div className="mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate">
                       {ride.pickupAddress.split(",")[0]} → {ride.dropoffAddress.split(",")[0]}
                     </span>
-                    <span className="text-[#7A2B66] dark:text-[#DB99CC] font-bold">Inspect →</span>
+                    <span className="shrink-0 font-bold text-[#7A2B66] dark:text-[#DB99CC]">Inspect →</span>
                   </div>
                 </div>
               ))

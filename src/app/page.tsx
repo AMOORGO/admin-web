@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { PermissionKey } from "@/types";
 import { AuthGate } from "@/components/auth/AuthGate";
 import { Navbar } from "@/components/Navbar";
@@ -44,10 +44,15 @@ const TAB_PERMISSION: Record<AdminTab, PermissionKey> = {
 };
 const TAB_ORDER = Object.keys(TAB_PERMISSION) as AdminTab[];
 
+/** Last tab the operator was on: survives the console re-mount when the demo role is switched. */
+let lastTab: AdminTab = "dashboard";
+
 export default function AdminConsolePage() {
+  const { sessionEpoch } = useAuth();
   return (
     <AuthGate>
-      <CityProvider>
+      {/* The key re-mounts the console (fresh data, permissions and city scope) when the demo role changes. */}
+      <CityProvider key={sessionEpoch}>
         <ConsoleShell />
       </CityProvider>
     </AuthGate>
@@ -61,8 +66,25 @@ function ConsoleShell() {
   const counters = useShellCounters(selectedCityId);
   const sos = useSosAlerts();
 
-  const [requestedTab, setCurrentTab] = useState<AdminTab>("dashboard");
+  const [navOpen, setNavOpen] = useState(false);
+  const [requestedTab, setRequestedTab] = useState<AdminTab>(lastTab);
+  const setCurrentTab = (tab: AdminTab) => {
+    lastTab = tab;
+    setRequestedTab(tab);
+    setNavOpen(false); // the off-canvas drawer closes on navigation
+    window.scrollTo({ top: 0 });
+  };
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // The drawer only exists below lg: close it (and release its scroll lock) if the viewport grows past that.
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => {
+      if (mq.matches) setNavOpen(false);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   // Drawers & modals are keyed by id: each fetches its own detail from the API.
   const [inspectingRideId, setInspectingRideId] = useState<string | null>(null);
@@ -75,15 +97,17 @@ function ConsoleShell() {
   const openSos = (incidentId?: string) => setInspectingSosIncidentId(incidentId ?? sos.activeIncident?.id ?? null);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FDFBFC] dark:bg-[#0F0811] text-[#1C121A] dark:text-[#FBF8FA] transition-colors">
+    <div className="flex min-h-dvh flex-col bg-[#FDFBFC] text-[#1C121A] transition-colors dark:bg-[#0F0811] dark:text-[#FBF8FA]">
       <Navbar
         activeRidesCount={counters.activeRides}
         onlineCaptainsCount={counters.onlineCaptains}
         activeSosIncident={sos.activeIncident}
         onOpenSOSModal={() => openSos()}
+        onOpenNav={() => setNavOpen(true)}
+        navOpen={navOpen}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex min-w-0 flex-1">
         <Sidebar
           currentTab={currentTab ?? "dashboard"}
           onSelectTab={setCurrentTab}
@@ -93,9 +117,14 @@ function ConsoleShell() {
           pendingRefundsCount={counters.pendingRefunds}
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          mobileOpen={navOpen}
+          onMobileClose={() => setNavOpen(false)}
         />
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+        <main
+          id="main"
+          className="mx-auto w-full min-w-0 max-w-[1600px] flex-1 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:p-6 lg:p-8"
+        >
           {currentTab === null && (
             <div className="rounded-2xl border border-[#F0E3ED] dark:border-[#331A3B] bg-white dark:bg-[#180D1C] p-10 text-center text-sm text-slate-500">
               Your account has no console permissions yet. Ask a Super Admin to assign a role.

@@ -3,20 +3,23 @@ import type { ApiLiveCluster, ApiLiveMap, ApiRideStatus, OpsSnapshot } from "../
 import type { DemoStore } from "../store";
 import { LIVE_STATUSES } from "./ride";
 import { iso, randFloat, rng } from "../util";
+import { effectiveCities } from "./scope";
 
 const ONLINE_AVAILABILITY = new Set(["ONLINE", "ON_RIDE", "BUSY"]);
 
 export const isOnline = (c: DemoStore["captains"][number]): boolean => c.d.status === "APPROVED" && ONLINE_AVAILABILITY.has(c.d.availability);
 
 export function onlineCaptainCount(store: DemoStore, cityId: string | null): number {
-  return store.captains.filter((c) => isOnline(c) && (!cityId || c.d.cityId === cityId)).length;
+  const ids = effectiveCities(store, cityId);
+  return store.captains.filter((c) => isOnline(c) && c.d.cityId !== null && ids.includes(c.d.cityId)).length;
 }
 
 export function buildSnapshot(store: DemoStore, cityId: string | null, drift = 0): OpsSnapshot {
   const rides: Record<string, number> = {};
+  const ids = effectiveCities(store, cityId);
   for (const row of store.rides) {
     if (!LIVE_STATUSES.includes(row.rec.status)) continue;
-    if (cityId && row.rec.cityId !== cityId) continue;
+    if (!ids.includes(row.rec.cityId)) continue;
     rides[row.rec.status] = (rides[row.rec.status] ?? 0) + 1;
   }
   if (drift !== 0) {
@@ -46,7 +49,8 @@ function clusterize(store: DemoStore, cityId: string): ApiLiveCluster[] {
 }
 
 export function buildLiveMap(store: DemoStore, cityId: string | null): ApiLiveMap {
-  const cities = store.cities.filter((c) => !cityId || c.id === cityId);
+  const allowed = effectiveCities(store, cityId);
+  const cities = store.cities.filter((c) => allowed.includes(c.id));
   return {
     serverTime: iso(Date.now()),
     cities: cities.map((city) => {

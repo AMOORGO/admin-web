@@ -42,3 +42,46 @@ export function subscribeDemoSession(listener: () => void): () => void {
     listeners.delete(listener);
   };
 }
+
+// ── Demo role (which staff member the visitor explores the console as) ──
+
+/** System roles offered by the demo, in picker order. Keys and names mirror the backend catalogue (SYSTEM_ROLES). */
+export const DEMO_ROLE_OPTIONS = [
+  { key: "SUPER_ADMIN", label: "Super Admin" },
+  { key: "OPERATIONS_ADMIN", label: "Operations Admin" },
+  { key: "CAPTAIN_OPS", label: "Captain Ops" },
+  { key: "SUPPORT_AGENT", label: "Support Agent" },
+  { key: "FINANCE_ADMIN", label: "Finance Admin" },
+  { key: "READ_ONLY", label: "Read Only" },
+] as const;
+
+export type DemoRoleKey = (typeof DEMO_ROLE_OPTIONS)[number]["key"];
+
+const ROLE_KEY = "amoorgo.demo.role";
+const DEFAULT_ROLE: DemoRoleKey = "SUPER_ADMIN";
+const isRoleKey = (v: unknown): v is DemoRoleKey => DEMO_ROLE_OPTIONS.some((o) => o.key === v);
+
+let cachedRole: DemoRoleKey | null = null;
+
+/** The role chosen for the demo (persisted per tab). */
+export function getDemoRole(): DemoRoleKey {
+  if (cachedRole) return cachedRole;
+  let stored: string | null = null;
+  try {
+    stored = typeof window === "undefined" ? null : window.sessionStorage.getItem(ROLE_KEY);
+  } catch {
+    /* storage unavailable: default role */
+  }
+  cachedRole = isRoleKey(stored) ? stored : DEFAULT_ROLE;
+  return cachedRole;
+}
+
+export function setDemoRoleKey(role: DemoRoleKey): void {
+  cachedRole = role;
+  try {
+    window.sessionStorage.setItem(ROLE_KEY, role);
+  } catch {
+    /* storage unavailable: the in-memory choice still applies to this page view */
+  }
+  listeners.forEach((l) => l());
+}

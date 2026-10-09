@@ -1,5 +1,6 @@
 /** Safety incidents: list, detail and the SOS command actions (acknowledge, assign, note, contact, escalate, resolve). */
 import type { ApiIncidentDetail, ApiIncidentEvent, ApiIncidentSummary, ApiRealm } from "../../adapters/safety";
+import { inScope } from "../logic/scope";
 import { type Ctx, type Router, listResult, ok } from "../router";
 import { recordAudit, staffById } from "../store";
 import { DemoError, asBody, conflict, iso, inRange, notFound, reqStr, str, uuid } from "../util";
@@ -31,7 +32,7 @@ export function toIncidentSummary(i: ApiIncidentDetail): ApiIncidentSummary {
 
 function incidentOr404(ctx: Ctx): ApiIncidentDetail {
   const i = ctx.store.incidents.find((x) => x.id === ctx.params.id);
-  if (!i) throw notFound("Incident");
+  if (!i || !inScope(ctx.store, i.cityId)) throw notFound("Incident");
   return i;
 }
 
@@ -53,6 +54,7 @@ export function registerSafety(r: Router): void {
     const { query } = ctx;
     const rows = ctx.store.incidents
       .filter((i) => {
+        if (!inScope(ctx.store, i.cityId)) return false;
         if (query.status && i.status !== query.status) return false;
         if (query.type && i.type !== query.type) return false;
         if (query.cityId && i.cityId !== query.cityId) return false;

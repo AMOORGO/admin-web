@@ -1,6 +1,7 @@
 import { io, type Socket } from "socket.io-client";
 import { API_ORIGIN, DEMO_ENABLED } from "../config";
 import { isDemoSession } from "../demo/flag";
+import { loadDemo } from "../demo/load";
 import { getAccessToken } from "../api";
 import { tokenStore } from "../auth/tokenStore";
 
@@ -94,7 +95,7 @@ class RealtimeClient {
   /** Demo mode: no socket. A local simulation emits the same events through the same handler registry. */
   private startDemo(): void {
     this.setState("connected");
-    void import("../demo").then(({ startDemoRealtime }) => {
+    void loadDemo().then(({ startDemoRealtime }) => {
       if (!this.started || this.demoStop) return;
       this.demoStop = startDemoRealtime((event, payload) => {
         this.handlers.get(event)?.forEach((h) => h(payload));

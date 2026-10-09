@@ -1,12 +1,13 @@
 /** Second Chance Driver programme: applications, tier / conditions management and periodic reviews. */
 import { scActionsFor, type ApiScDetail, type ApiScNote, type ApiScStats, type ApiScStatus, type ApiScTier, type ScRestrictions } from "../../adapters/secondChance";
+import { inScope } from "../logic/scope";
 import { type Ctx, type Router, listResult, ok } from "../router";
 import { type CaptainRow, recordAudit } from "../store";
 import { DAY, DemoError, asBody, bool, conflict, flagParam, iso, matchesQuery, notFound, num, reqStr, str, uuid } from "../util";
 
 function scOr404(ctx: Ctx): { row: CaptainRow; sc: ApiScDetail } {
   const row = ctx.store.captains.find((c) => c.d.id === ctx.params.captainId);
-  if (!row || !row.sc) throw notFound("Second Chance record");
+  if (!row || !row.sc || !inScope(ctx.store, row.d.cityId)) throw notFound("Second Chance record");
   return { row, sc: row.sc };
 }
 
@@ -43,6 +44,7 @@ export function registerSecondChance(r: Router): void {
       .filter((c): c is CaptainRow & { sc: ApiScDetail } => c.sc !== null)
       .filter((c) => {
         const sc = c.sc;
+        if (!inScope(ctx.store, c.d.cityId)) return false;
         if (query.status && sc.status !== query.status) return false;
         if (query.tier && sc.tier !== query.tier) return false;
         if (query.cityId && c.d.cityId !== query.cityId) return false;
@@ -55,7 +57,10 @@ export function registerSecondChance(r: Router): void {
   });
 
   r.get("/admin/second-chance/stats", (ctx) => {
-    const all = ctx.store.captains.map((c) => c.sc).filter((x): x is ApiScDetail => x !== null);
+    const all = ctx.store.captains
+      .filter((c) => inScope(ctx.store, c.d.cityId))
+      .map((c) => c.sc)
+      .filter((x): x is ApiScDetail => x !== null);
     const byStatus: ApiScStats["byStatus"] = {};
     const byTier: ApiScStats["byTier"] = {};
     for (const sc of all) {

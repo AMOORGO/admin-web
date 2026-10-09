@@ -12,13 +12,14 @@ import {
 } from "../../adapters/rides";
 import { numberConfig } from "../logic/config";
 import { appendEvent } from "../logic/ride";
+import { inScope } from "../logic/scope";
 import { type Ctx, type Router, listResult, ok } from "../router";
 import { type CaptainRow, type RideRow, captainById, recordAudit, rideById, riderById } from "../store";
 import { DemoError, asBody, bool, conflict, flagParam, inRange, iso, matchesQuery, notFound, num, randInt, reqStr, rng, str, uuid } from "../util";
 
 function rideOr404(ctx: Ctx): RideRow {
   const row = rideById(ctx.store, ctx.params.id);
-  if (!row) throw notFound("Ride");
+  if (!row || !inScope(ctx.store, row.rec.cityId)) throw notFound("Ride");
   return row;
 }
 
@@ -132,6 +133,7 @@ export function registerRides(r: Router): void {
     const statuses = (query.statuses ?? "").split(",").filter(Boolean);
     const rows = sortedByRequested(ctx.store.rides).filter((row) => {
       const rec = row.rec;
+      if (!inScope(ctx.store, rec.cityId)) return false;
       if (query.cityId && rec.cityId !== query.cityId) return false;
       if (query.status && rec.status !== query.status) return false;
       if (statuses.length > 0 && !statuses.includes(rec.status)) return false;

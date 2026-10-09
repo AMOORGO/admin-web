@@ -29,6 +29,8 @@ import type { ApiDispatchAttempt, ApiRideRecord, ApiRidePayment, ApiTimelineStep
 import type { ApiIncidentDetail } from "../adapters/safety";
 import type { ApiScDetail } from "../adapters/secondChance";
 import type { ApiUserDetail } from "../adapters/users";
+import { getDemoRole } from "./flag";
+import { applyRole } from "./roles";
 import { buildStore } from "./seed";
 import { iso, uuid } from "./util";
 
@@ -108,7 +110,10 @@ let store: DemoStore | null = null;
 
 /** The singleton store, built (seeded) on first use. */
 export function getStore(): DemoStore {
-  if (!store) store = buildStore(Date.now());
+  if (!store) {
+    store = buildStore(Date.now());
+    applyRole(store, getDemoRole());
+  }
   return store;
 }
 
@@ -149,7 +154,7 @@ export function recordAudit(s: DemoStore, input: AuditInput): ApiAuditEntry {
   const entry: ApiAuditEntry = {
     id: uuid(),
     timestamp: iso(Date.now()),
-    actor: { realm: "STAFF", id: s.me.id, name: s.me.name, email: s.me.email, role: "SUPER_ADMIN" },
+    actor: { realm: "STAFF", id: s.me.id, name: s.me.name, email: s.me.email, role: s.me.roles[0] ?? "SUPER_ADMIN" },
     action: input.action,
     category: input.category,
     targetType: input.targetType,

@@ -30,6 +30,7 @@ interface Route {
   regex: RegExp;
   keys: string[];
   handler: Handler;
+  pattern: string;
 }
 
 export class Router {
@@ -47,7 +48,7 @@ export class Router {
         return seg.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       })
       .join("/");
-    this.routes.push({ method, regex: new RegExp(`^${source}/?$`), keys, handler });
+    this.routes.push({ method, regex: new RegExp(`^${source}/?$`), keys, handler, pattern });
   }
 
   get(pattern: string, handler: Handler): void {
@@ -67,7 +68,7 @@ export class Router {
   }
 
   /** Finds the first route matching method + path; static segments are registered before parameterised ones by the callers. */
-  match(method: string, path: string): { handler: Handler; params: Record<string, string> } | null {
+  match(method: string, path: string): { handler: Handler; params: Record<string, string>; pattern: string } | null {
     for (const route of this.routes) {
       if (route.method !== method) continue;
       const m = route.regex.exec(path);
@@ -76,7 +77,7 @@ export class Router {
       route.keys.forEach((k, i) => {
         params[k] = decodeURIComponent(m[i + 1]);
       });
-      return { handler: route.handler, params };
+      return { handler: route.handler, params, pattern: route.pattern };
     }
     return null;
   }

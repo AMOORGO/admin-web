@@ -1,6 +1,7 @@
 import { API_BASE, DEFAULT_TIMEOUT_MS, DEMO_ENABLED } from "../config";
 import { tokenStore } from "../auth/tokenStore";
 import { isDemoSession } from "../demo/flag";
+import { loadDemo } from "../demo/load";
 import { ApiError } from "./errors";
 import type { Envelope, Page, QueryParams, RequestOptions } from "./types";
 
@@ -173,7 +174,7 @@ async function demoRequest(method: Method, path: string, opts: RequestOptions): 
   const headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(opts.headers ?? {})) headers[k.toLowerCase()] = v;
   try {
-    const demo = await import("../demo");
+    const demo = await loadDemo();
     const out = await demo.handleDemoRequest({ method, path, query: demoQuery(opts.query), body: opts.body, headers, signal: opts.signal });
     const isText = typeof out.body === "string";
     const res = new Response(isText ? (out.body as string) : JSON.stringify(out.body), { status: out.status, headers: out.headers });

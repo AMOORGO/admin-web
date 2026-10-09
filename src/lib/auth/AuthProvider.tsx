@@ -3,7 +3,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { api, publicApi } from "../api";
 import { DEMO_ENABLED } from "../config";
-import { isDemoSession, setDemoSession, subscribeDemoSession } from "../demo/flag";
+import { loadDemo } from "../demo/load";
+import { getDemoRole, isDemoSession, setDemoSession, subscribeDemoSession, type DemoRoleKey } from "../demo/flag";
 import { tokenStore } from "./tokenStore";
 import type { AuthenticatedLogin, EnrolmentInfo, LoginResult, StaffMe } from "./types";
 
@@ -29,8 +30,14 @@ export interface AuthContextValue {
   logout: () => Promise<void>;
   /** True while the console runs on the built-in sample data (no backend). Always false unless demo mode is enabled. */
   isDemo: boolean;
-  /** Opens the console as a synthetic Super Admin on sample data. No-op unless demo mode is enabled at build time. */
-  startDemo: () => Promise<void>;
+  /** Opens the console on sample data as the chosen system role (Super Admin by default). No-op unless demo mode is enabled at build time. */
+  startDemo: (role?: DemoRoleKey) => Promise<void>;
+  /** The staff role the demo is currently explored as. */
+  demoRole: DemoRoleKey;
+  /** Instantly switches the demo identity (name, permissions, city scope); the console below re-mounts with fresh data. */
+  switchDemoRole: (role: DemoRoleKey) => Promise<void>;
+  /** Increments whenever the signed-in identity changes without a reload (demo role switch). */
+  sessionEpoch: number;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,6 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hydrated = useSyncExternalStore(subscribeNoop, () => true, () => false);
 
   const isDemo = useSyncExternalStore(subscribeDemoSession, isDemoSession, () => false);
+  const demoRole = useSyncExternalStore(subscribeDemoSession, getDemoRole, () => "SUPER_ADMIN" as DemoRoleKey);
+  const [sessionEpoch, setSessionEpoch] = useState(0);
 
   const [profile, setUser] = useState<StaffMe | null>(null);
   const [bootError, setNotice] = useState<string | null>(null);
@@ -117,18 +126,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [finishLogin],
   );
 
-  const startDemo = useCallback(async () => {
+  const startDemo = useCallback(async (role?: DemoRoleKey) => {
     if (!DEMO_ENABLED) return;
     // Flag first: every request from here on is answered by the local demo backend.
     setDemoSession(true);
     try {
-      const demo = await import("../demo");
-      finishLogin(demo.createDemoSession());
+      const demo = await loadDemo();
+      finishLogin(demo.createDemoSession(role));
     } catch (e) {
       setDemoSession(false);
       throw e;
     }
   }, [finishLogin]);
+
+  const switchDemoRole = useCallback(async (role: DemoRoleKey) => {
+    if (!DEMO_ENABLED || !isDemoSession()) return;
+    const demo = await loadDemo();
+    setUser(demo.switchDemoRole(role));
+    setSessionEpoch((n) => n + 1);
+  }, []);
 
   const logout = useCallback(async () => {
     const session = tokenStore.get();
@@ -159,8 +175,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       isDemo,
       startDemo,
+      demoRole,
+      switchDemoRole,
+      sessionEpoch,
     }),
-    [status, user, notice, can, login, startEnrolment, verifyTwoFactor, acceptInvite, logout, isDemo, startDemo],
+    [status, user, notice, can, login, startEnrolment, verifyTwoFactor, acceptInvite, logout, isDemo, startDemo, demoRole, switchDemoRole, sessionEpoch],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

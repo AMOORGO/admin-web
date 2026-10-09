@@ -1,6 +1,7 @@
 /** Finance: transactions, payments, refunds (approve / reject), payouts and batches, ledger reconciliation, reports. */
 import type { ApiDiscrepancies, ApiFinanceSummary, ApiPayment, ApiPayout, ApiPayoutBatch, ApiRefund, ApiTransactionStatus, ApiTransactionType } from "../../adapters/finance";
 import { addTransaction, postEntries } from "../logic/ledger";
+import { inScope, scopeOf } from "../logic/scope";
 import { type Ctx, type Router, listResult, ok } from "../router";
 import { recordAudit } from "../store";
 import { DAY, HOUR, DemoError, asBody, conflict, flagParam, iso, inRange, notFound, randInt, reqStr, rng, str, uuid } from "../util";
@@ -27,7 +28,7 @@ export function registerFinance(r: Router): void {
   r.get("/admin/transactions", (ctx) => {
     const { query } = ctx;
     const rows = ctx.store.transactions.filter(
-      (t) => (!query.type || t.type === query.type) && (!query.status || t.status === query.status) && (!query.gateway || t.gateway === query.gateway) && (!query.cityId || t.cityId === query.cityId),
+      (t) => inScope(ctx.store, t.cityId) && (!query.type || t.type === query.type) && (!query.status || t.status === query.status) && (!query.gateway || t.gateway === query.gateway) && (!query.cityId || t.cityId === query.cityId),
     );
     return listResult(rows, query);
   });
@@ -112,10 +113,14 @@ export function registerFinance(r: Router): void {
   r.post("/admin/refunds/:id/approve", (ctx) => decide(ctx, "approve"));
   r.post("/admin/refunds/:id/reject", (ctx) => decide(ctx, "reject"));
 
-  r.get("/admin/payout-batches", (ctx) => listResult(ctx.store.batches, ctx.query, 10));
+  r.get("/admin/payout-batches", (ctx) => {
+    const scope = scopeOf(ctx.store);
+    return listResult(scope ? ctx.store.batches.filter((b) => b.cityId !== null && scope.includes(b.cityId)) : ctx.store.batches, ctx.query, 10);
+  });
   r.get("/admin/payouts", (ctx) => {
     const { query } = ctx;
-    return listResult(ctx.store.payouts.filter((p) => (!query.status || p.status === query.status) && (!query.batchId || p.batchId === query.batchId)), query);
+    const cityOf = (captainId: string) => ctx.store.captains.find((c) => c.d.id === captainId)?.d.cityId ?? null;
+    return listResult(ctx.store.payouts.filter((p) => inScope(ctx.store, cityOf(p.captainId)) && (!query.status || p.status === query.status) && (!query.batchId || p.batchId === query.batchId)), query);
   });
 
   r.post("/admin/payouts/batch", (ctx) => {

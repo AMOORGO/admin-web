@@ -42,7 +42,8 @@ export function CityProvider({ children }: { children: React.ReactNode }) {
   const { data, loading, refetch } = useQuery<City[]>(allowed ? "cities" : null, (signal) => fetchAllPages<City>("/admin/cities", { signal }));
   const [selected, setSelected] = useState<string | null>(null);
 
-  const cities = useMemo(() => data ?? [], [data]);
+  // Without config.view the list is empty even if a previous identity (demo role switch) had loaded cities.
+  const cities = useMemo(() => (allowed ? (data ?? []) : []), [allowed, data]);
   const byId = useMemo(() => new Map(cities.map((c) => [c.id, c])), [cities]);
   const selectedCityId = selected && byId.has(selected) ? selected : null;
 

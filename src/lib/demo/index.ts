@@ -2,7 +2,10 @@
  * Demo transport: answers API requests locally from an in-memory store, using the same envelope shapes as the real
  * NestJS API. Loaded with a dynamic import() only while a demo session is active (see lib/api/client.ts).
  */
-import type { AuthenticatedLogin } from "../auth/types";
+import type { AuthenticatedLogin, StaffMe } from "../auth/types";
+import { setDemoRoleKey, type DemoRoleKey } from "./flag";
+import { applyRole } from "./roles";
+import { requiredPermissions } from "./routes/permissions";
 import { registerCaptains } from "./routes/captains";
 import { registerCore } from "./routes/core";
 import { registerFinance } from "./routes/finance";
@@ -79,7 +82,12 @@ export async function handleDemoRequest(req: DemoRequest): Promise<DemoResponse>
     }
     return errorResponse(404, "DEMO_UNAVAILABLE", "This action is not available in demo mode.");
   }
-  const ctx: Ctx = { method: req.method, params: match.params, query: req.query, body: asBody(req.body), headers: req.headers, store: getStore() };
+  const store = getStore();
+  // Same check as the backend's auth guard: every @StaffAuth(...) permission must be held.
+  const held = new Set(store.me.permissions);
+  const missing = requiredPermissions(req.method, match.pattern).filter((p) => !held.has(p));
+  if (missing.length > 0) return errorResponse(403, "PERMISSION_DENIED", "You do not have permission to perform this action", { missing });
+  const ctx: Ctx = { method: req.method, params: match.params, query: req.query, body: asBody(req.body), headers: req.headers, store };
   try {
     return toResponse(match.handler(ctx));
   } catch (e) {
@@ -88,9 +96,16 @@ export async function handleDemoRequest(req: DemoRequest): Promise<DemoResponse>
   }
 }
 
-/** Synthetic Super Admin session (all permissions) that starts a demo. */
-export function createDemoSession(): AuthenticatedLogin {
+/** Switches the demo identity to another system role; returns the new session user. */
+export function switchDemoRole(role: DemoRoleKey): StaffMe {
+  setDemoRoleKey(role);
+  return applyRole(getStore(), role);
+}
+
+/** Synthetic staff session (Super Admin unless another role is chosen) that starts a demo. */
+export function createDemoSession(role?: DemoRoleKey): AuthenticatedLogin {
   const store = getStore();
+  if (role) switchDemoRole(role);
   store.me.lastLoginAt = iso(Date.now());
   return {
     status: "AUTHENTICATED",

@@ -62,7 +62,7 @@ export const ALL_PERMISSIONS = Object.keys(PERMISSION_DESCRIPTIONS) as Permissio
 const SENSITIVE: PermissionKey[] = ["finance.refund_approve", "finance.payouts", "config.edit", "staff.create", "staff.manage", "roles.manage", "rides.adjust_fare"];
 const SUPER_ADMIN_ONLY: PermissionKey[] = ["staff.create", "staff.manage", "roles.manage", "config.edit"];
 
-const SYSTEM_ROLES: Array<{ key: string; name: string; description: string; permissions: PermissionKey[] }> = [
+export const SYSTEM_ROLES: Array<{ key: string; name: string; description: string; permissions: PermissionKey[] }> = [
   { key: "SUPER_ADMIN", name: "Super Admin", description: "Full access to everything, including staff and configuration", permissions: ALL_PERMISSIONS },
   {
     key: "OPERATIONS_ADMIN",
@@ -130,7 +130,7 @@ export interface PeopleSeed {
 
 // ── Staff ──
 
-const STAFF_DEFS: Array<{ name: string; email: string; role: string; scope: string[]; totp: boolean; status: ApiStaff["status"]; lastLoginMin: number | null }> = [
+export const STAFF_DEFS: Array<{ name: string; email: string; role: string; scope: string[]; totp: boolean; status: ApiStaff["status"]; lastLoginMin: number | null }> = [
   { name: "Elena Rostova", email: "elena.ops@amoorgo.com", role: "OPERATIONS_ADMIN", scope: ["austin", "dallas"], totp: true, status: "ACTIVE", lastLoginMin: 24 },
   { name: "Marcus Vance", email: "marcus.fleet@amoorgo.com", role: "CAPTAIN_OPS", scope: ["austin"], totp: true, status: "ACTIVE", lastLoginMin: 130 },
   { name: "Amina Patel", email: "amina.finance@amoorgo.com", role: "FINANCE_ADMIN", scope: [], totp: true, status: "ACTIVE", lastLoginMin: 300 },

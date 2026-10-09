@@ -2,13 +2,14 @@
 import type { ApiCaptainListItem, ApiQueueDocument, ApiSignedUrl, ApiStaffDocument } from "../../adapters/captains";
 import { placeholderPdf, placeholderSvg } from "../documents";
 import { refreshDerived, maskNumber } from "../logic/captain";
+import { inScope } from "../logic/scope";
 import { type Ctx, type Router, listResult, ok } from "../router";
 import { type CaptainRow, captainById, recordAudit } from "../store";
 import { DAY, DemoError, asBody, bool, conflict, iso, matchesQuery, notFound, num, reqStr, str, strList, uuid } from "../util";
 
 export function captainOr404(ctx: Ctx, id = ctx.params.id): CaptainRow {
   const row = captainById(ctx.store, id);
-  if (!row) throw notFound("Captain");
+  if (!row || !inScope(ctx.store, row.d.cityId)) throw notFound("Captain");
   return row;
 }
 
@@ -65,6 +66,7 @@ export function registerCaptains(r: Router): void {
     const rows = ctx.store.captains
       .filter((c) => {
         const d = c.d;
+        if (!inScope(ctx.store, d.cityId)) return false;
         if (query.status && d.status !== query.status) return false;
         if (query.availability && d.availability !== query.availability) return false;
         if (query.cityId && d.cityId !== query.cityId) return false;
@@ -85,6 +87,7 @@ export function registerCaptains(r: Router): void {
     const { query } = ctx;
     const docs: ApiQueueDocument[] = [];
     for (const c of ctx.store.captains) {
+      if (!inScope(ctx.store, c.d.cityId)) continue;
       if (query.cityId && c.d.cityId !== query.cityId) continue;
       for (const d of c.d.documents) {
         if (query.status && d.status !== query.status) continue;

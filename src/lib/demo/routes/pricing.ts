@@ -2,6 +2,7 @@
 import type { ApiCancellationPolicy, ApiCityFull, ApiFarePreview, ApiPricingRule, ApiSurgeRule, ApiZone, ZoneTypeValue } from "../../adapters/pricing";
 import { configEntries, flagEntries } from "../logic/config";
 import { computeFare } from "../logic/fare";
+import { inScope } from "../logic/scope";
 import { type Ctx, type Router, listResult, ok } from "../router";
 import { recordAudit } from "../store";
 import { DemoError, asBody, bool, conflict, iso, notFound, num, reqStr, str, uuid } from "../util";
@@ -37,7 +38,7 @@ const intField = (b: Record<string, unknown>, key: string, fallback: number): nu
 
 export function registerPricing(r: Router): void {
   // ── Cities ──
-  r.get("/admin/cities", (ctx) => listResult(ctx.store.cities, ctx.query, 100));
+  r.get("/admin/cities", (ctx) => listResult(ctx.store.cities.filter((c) => inScope(ctx.store, c.id)), ctx.query, 100));
 
   r.patch("/admin/cities/:id", (ctx) => {
     const city = cityOr404(ctx);
@@ -70,7 +71,7 @@ export function registerPricing(r: Router): void {
   r.get("/admin/pricing/rules", (ctx) => {
     const { query } = ctx;
     const rows = ctx.store.rules
-      .filter((x) => (!query.cityId || x.cityId === query.cityId) && (!query.serviceTypeId || x.serviceTypeId === query.serviceTypeId))
+      .filter((x) => inScope(ctx.store, x.cityId) && (!query.cityId || x.cityId === query.cityId) && (!query.serviceTypeId || x.serviceTypeId === query.serviceTypeId))
       .sort((a, b) => b.version - a.version);
     return listResult(rows, query, 100);
   });
@@ -189,7 +190,7 @@ export function registerPricing(r: Router): void {
   // ── Cancellation policies ──
   r.get("/admin/pricing/cancellation-policies", (ctx) => {
     const { query } = ctx;
-    return listResult(ctx.store.policies.filter((p) => !query.cityId || p.cityId === query.cityId), query, 100);
+    return listResult(ctx.store.policies.filter((p) => inScope(ctx.store, p.cityId) && (!query.cityId || p.cityId === query.cityId)), query, 100);
   });
 
   r.put("/admin/pricing/cancellation-policies", (ctx) => {
@@ -226,7 +227,7 @@ export function registerPricing(r: Router): void {
   // ── Surge ──
   r.get("/admin/pricing/surge-rules", (ctx) => {
     const { query } = ctx;
-    const zoneIds = new Set(ctx.store.zones.filter((z) => !query.cityId || z.cityId === query.cityId).map((z) => z.id));
+    const zoneIds = new Set(ctx.store.zones.filter((z) => inScope(ctx.store, z.cityId) && (!query.cityId || z.cityId === query.cityId)).map((z) => z.id));
     const rows = ctx.store.surgeRules.filter((s) => zoneIds.has(s.zoneId)).sort((a, b) => new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime());
     return listResult(rows, query, 100);
   });
@@ -266,7 +267,7 @@ export function registerPricing(r: Router): void {
   // ── Zones ──
   r.get("/admin/zones", (ctx) => {
     const { query } = ctx;
-    return listResult(ctx.store.zones.filter((z) => !query.cityId || z.cityId === query.cityId), query, 100);
+    return listResult(ctx.store.zones.filter((z) => inScope(ctx.store, z.cityId) && (!query.cityId || z.cityId === query.cityId)), query, 100);
   });
 
   r.post("/admin/zones", (ctx) => {
